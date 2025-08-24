@@ -2,8 +2,8 @@
 model:
   id: "gpt-4-turbo"
   name: "GPT-4 Turbo"
-  friendly_name: "GPT-4 Turbo (Vision)"
-  description: "Legacy GPT-4 Turbo model with vision capabilities"
+  friendly_name: "GPT-4 Turbo (Legacy)"
+  description: "Proven GPT-4 Turbo model with reliable text generation and consistent quality"
   
 capabilities:
   vision: true

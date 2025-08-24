@@ -3,7 +3,7 @@ model:
   id: "gpt-5-mini"
   name: "GPT-5 Mini"
   friendly_name: "GPT-5 Mini (Fast & Efficient)"
-  description: "Fast and efficient version of GPT-5 with vision capabilities"
+  description: "Fast and cost-effective content generation with solid writing quality and quick response times"
   
 capabilities:
   vision: true

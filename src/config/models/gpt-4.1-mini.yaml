@@ -2,8 +2,8 @@
 model:
   id: "gpt-4.1-mini"
   name: "GPT-4.1 Mini"
-  friendly_name: "GPT-4.1 Mini (Faster Version)"
-  description: "Faster version of GPT-4.1 with vision capabilities"
+  friendly_name: "GPT-4.1 Mini (Speed Optimized)"
+  description: "Speed-optimized content generation with enhanced writing quality and rapid response"
   
 capabilities:
   vision: true

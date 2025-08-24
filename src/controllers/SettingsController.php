@@ -86,7 +86,6 @@ class SettingsController extends Controller
      */
     public function actionGetModelList(): Response
     {
-        $this->requireGetRequest();
         $this->requireAcceptsJson();
         
         // Check admin permissions
@@ -99,12 +98,20 @@ class SettingsController extends Controller
             // Format models for dropdown selection
             $formattedModels = [];
             foreach ($models as $model) {
+                // Only include models that should be shown in dropdown
+                $showInDropdown = $model['ui_display']['show_in_dropdown'] ?? true;
+                if (!$showInDropdown) {
+                    continue;
+                }
+                
                 $formattedModels[] = [
                     'value' => $model['model']['id'],
                     'label' => $model['model']['friendly_name'] ?? $model['model']['name'] ?? $model['model']['id'],
                     'description' => $model['metadata']['description'] ?? '',
                     'priority' => $model['metadata']['priority'] ?? 0,
-                    'capabilities' => $model['capabilities'] ?? []
+                    'capabilities' => $model['capabilities'] ?? [],
+                    'badge' => $model['ui_display']['badge'] ?? null,
+                    'recommended' => $model['ui_display']['recommended'] ?? false
                 ];
             }
             
@@ -139,7 +146,6 @@ class SettingsController extends Controller
      */
     public function actionGetModelInfo(): Response
     {
-        $this->requireGetRequest();
         $this->requireAcceptsJson();
         
         // Check admin permissions
@@ -258,7 +264,6 @@ class SettingsController extends Controller
      */
     public function actionGetConfigurationSummary(): Response
     {
-        $this->requireGetRequest();
         $this->requireAcceptsJson();
         
         // Check admin permissions

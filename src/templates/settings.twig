@@ -165,7 +165,7 @@
 
     {{ forms.textField({
         label: 'Max Tokens'|t('ai-content-writer'),
-        instructions: 'Maximum tokens for content generation (100-4000). This setting overrides model defaults. Higher values allow longer content but increase API costs. Model defaults are now aligned with this setting (2000 tokens).'|t('ai-content-writer'),
+        instructions: 'Maximum tokens for content generation (100-4000). This setting overrides model defaults. Higher values allow longer content but increase API costs.'|t('ai-content-writer'),
         id: 'max-tokens',
         name: 'maxTokens',
         value: settings.maxTokens,
@@ -410,59 +410,97 @@
         // Set current value if available
         const currentValue = '{{ settings.openAiModel }}';
         
-        // Add a basic set of models for now
-        // In a full implementation, this would load from the model configuration service
-        const models = [
-            { value: 'gpt-5', label: 'GPT-5 (Recommended)', priority: 10 },
-            { value: 'gpt-4o', label: 'GPT-4o', priority: 9 },
-            { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', priority: 8 },
-            { value: 'gpt-4', label: 'GPT-4', priority: 7 }
-        ];
-        
-        // Clear existing options except the first
-        while (modelSelect.children.length > 1) {
-            modelSelect.removeChild(modelSelect.lastChild);
+        // Show loading state
+        modelSelect.disabled = true;
+        if (modelError) {
+            modelError.style.display = 'none';
         }
         
-        // Add model options
-        models.forEach(model => {
-            const option = document.createElement('option');
-            option.value = model.value;
-            option.textContent = model.label;
-            if (model.value === currentValue) {
-                option.selected = true;
+        // Fetch models from the API
+        fetch(Craft.getActionUrl('ai-content-writer/settings/get-model-list'), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-Token': Craft.csrfTokenValue
             }
-            modelSelect.appendChild(option);
-        });
-        
-        // If no current value is set, select the default (GPT-5)
-        if (!currentValue && models.length > 0) {
-            modelSelect.value = 'gpt-5';
-            modelSelect.dispatchEvent(new Event('change'));
-        }
-        
-        // Show model info when selection changes
-        modelSelect.addEventListener('change', function() {
-            if (this.value) {
-                const selectedModel = models.find(m => m.value === this.value);
-                if (selectedModel && modelInfo) {
-                    modelInfo.textContent = `Selected: ${selectedModel.label}`;
-                    modelInfo.style.display = 'block';
-                }
-                if (modelError) {
-                    modelError.style.display = 'none';
-                }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.models) {
+                console.log(`AI Content Writer: Loaded ${data.models.length} models from configuration`);
+                populateModelDropdown(data.models);
             } else {
-                if (modelInfo) {
-                    modelInfo.style.display = 'none';
-                }
+                throw new Error(data.error || 'Failed to load models');
             }
+        })
+        .catch(error => {
+            console.error('Error loading models:', error);
+            if (modelError) {
+                modelError.textContent = 'Failed to load available models: ' + error.message;
+                modelError.style.display = 'block';
+            }
+            
+            // Fallback to basic models if API fails
+            const fallbackModels = [
+                { value: 'gpt-5', label: 'GPT-5 (Recommended)', priority: 10 },
+                { value: 'gpt-4o', label: 'GPT-4o', priority: 9 },
+                { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', priority: 8 }
+            ];
+            populateModelDropdown(fallbackModels);
+        })
+        .finally(() => {
+            modelSelect.disabled = false;
         });
         
-        // Trigger change event if there's a current value
-        if (currentValue && modelSelect.value === currentValue) {
-            modelSelect.dispatchEvent(new Event('change'));
+        function populateModelDropdown(models) {
+            // Clear existing options except the first
+            while (modelSelect.children.length > 1) {
+                modelSelect.removeChild(modelSelect.lastChild);
+            }
+            
+            // Add model options
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.value;
+                
+                // Use clean label without extra appended text
+                option.textContent = model.label;
+                option.dataset.description = model.description || '';
+                option.dataset.badge = model.badge || '';
+                option.dataset.recommended = model.recommended || false;
+                
+                modelSelect.appendChild(option);
+            });
+            
+            // Set the selected value after all options are added
+            if (currentValue) {
+                modelSelect.value = currentValue;
+            } else if (models.length > 0) {
+                modelSelect.value = models[0].value;
+            }
+            
+            // Trigger change event to update the info display
+            if (modelSelect.value) {
+                modelSelect.dispatchEvent(new Event('change'));
+            }
         }
+        
+        // Hide model info element (no longer needed)
+        if (modelInfo) {
+            modelInfo.style.display = 'none';
+        }
+        
+        // Clear errors when model selection changes
+        modelSelect.addEventListener('change', function() {
+            if (modelError) {
+                modelError.style.display = 'none';
+            }
+        });
     }
     
     /**

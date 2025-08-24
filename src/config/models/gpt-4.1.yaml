@@ -2,8 +2,8 @@
 model:
   id: "gpt-4.1"
   name: "GPT-4.1"
-  friendly_name: "GPT-4.1 (Smart Non-Reasoning)"
-  description: "GPT-4.1 series model with vision capabilities"
+  friendly_name: "GPT-4.1 (Enhanced Writing)"
+  description: "Advanced text generation with improved coherence and contextual understanding"
   
 capabilities:
   vision: true

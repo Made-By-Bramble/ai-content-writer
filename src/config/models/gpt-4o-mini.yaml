@@ -2,8 +2,8 @@
 model:
   id: "gpt-4o-mini"
   name: "GPT-4o Mini"
-  friendly_name: "GPT-4o Mini (Lightweight)"
-  description: "Lightweight multimodal model with vision capabilities"
+  friendly_name: "GPT-4o Mini (Budget-Friendly)"
+  description: "Cost-effective content generation with good writing quality and fast processing"
   
 capabilities:
   vision: true

@@ -2,8 +2,8 @@
 model:
   id: "gpt-4o"
   name: "GPT-4o"
-  friendly_name: "GPT-4o (Multimodal)"
-  description: "Advanced multimodal model with vision capabilities"
+  friendly_name: "GPT-4o (Balanced Performance)"
+  description: "Well-balanced model offering excellent text quality with reliable consistency and natural flow"
   
 capabilities:
   vision: true
@@ -30,6 +30,7 @@ ui_display:
   show_in_dropdown: true
   category: "GPT-4 Series"
   recommended: true
+  badge: "Reliable"
   
 version_info:
   api_version: "2024-02-01"

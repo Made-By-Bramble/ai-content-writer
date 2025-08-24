@@ -336,7 +336,6 @@ class ContentController extends Controller
      */
     public function actionGetFieldMapping(): Response
     {
-        $this->requireGetRequest();
         $this->requireAcceptsJson();
 
         $request = Craft::$app->getRequest();
@@ -372,7 +371,6 @@ class ContentController extends Controller
      */
     public function actionGetStats(): Response
     {
-        $this->requireGetRequest();
         $this->requireAcceptsJson();
 
         // Check admin permissions

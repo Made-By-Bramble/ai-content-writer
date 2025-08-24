@@ -2,8 +2,8 @@
 model:
   id: "o3"
   name: "O3"
-  friendly_name: "o3 (Advanced Reasoning)"
-  description: "Advanced reasoning model with enhanced problem-solving and vision capabilities"
+  friendly_name: "o3 (Deep Thinking)"
+  description: "Advanced reasoning model that produces thoughtful, well-structured content with deep analysis"
   
 capabilities:
   vision: true
