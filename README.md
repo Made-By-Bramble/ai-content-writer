@@ -31,11 +31,13 @@ Revolutionize your content workflow with intelligent AI-generated text for any f
 - **Plain Text Fields**: Simple text content generation
 - **Rich Text Editors**: HTML-formatted content (Redactor, CKEditor)
 - **Table Fields**: Structured data content
+- **Matrix Fields**: Full support for matrix block entries via slideout editing
 - Dynamic field detection per entry type
 
 ### **🎯 Intelligent Integration**
-- Entry editor sidebar panel
+- Entry editor sidebar panel for main entries and matrix blocks
 - Dynamic field selection based on entry type
+- Seamless slideout support for matrix field editing
 - Real-time content preview before insertion
 - One-click content insertion with format detection
 
@@ -158,6 +160,7 @@ Control which field types can receive generated content:
 - **Redactor**: Rich HTML content with formatting
 - **CKEditor**: Advanced rich text editing
 - **Table**: Structured content (manual insertion)
+- **Matrix Blocks**: All supported field types within matrix block entries
 
 ### **🔧 Advanced Settings**
 
@@ -176,13 +179,20 @@ Control which field types can receive generated content:
 ### **From Entry Editor**
 
 #### Basic Usage
-1. Open any entry for editing
+1. Open any entry for editing (or matrix block via slideout)
 2. Locate the "AI Content Writer" panel in the sidebar
 3. Select your target field from the dropdown
 4. Enter a descriptive prompt for the content you need
 5. Click "Generate Content" to create AI-powered text
 6. Review the generated content in the preview area
 7. Click "Insert into Field" to add it to your entry
+
+#### Matrix Field Support
+The plugin fully supports content generation in matrix block entries:
+- **Slideout Integration**: Works seamlessly in Craft's matrix field slideout editors
+- **Entry Type Detection**: Automatically detects matrix block entry types and available fields
+- **All Field Types**: Supports all compatible field types within matrix blocks
+- **Context Awareness**: Understands matrix block context for better content generation
 
 #### Field Selection
 - **Dynamic Loading**: Available fields are loaded automatically based on entry type
@@ -266,6 +276,7 @@ Add to your dashboard for quick monitoring:
 - ✅ Check that field exists and is editable
 - ✅ Review browser console for JavaScript errors
 - ✅ Confirm proper field selector configuration
+- ✅ For matrix blocks: Ensure slideout editor is fully loaded before generating content
 
 ### **Performance Issues**
 
@@ -288,10 +299,12 @@ Add to your dashboard for quick monitoring:
 - **Redactor**: HTML content with rich text editor integration
 - **CKEditor**: Advanced rich text with full formatting support
 - **Table**: Structured content (requires manual organization)
+- **Matrix Blocks**: All above field types supported within matrix block entries
 
 ### **Field Insertion Methods**
 - **Direct**: Simple text fields with immediate insertion
-- **API Integration**: Rich text editors using their JavaScript APIs
+- **API Integration**: Rich text editors using their JavaScript APIs  
+- **Slideout Context**: Full support for matrix block field insertion
 - **Manual**: Complex fields requiring user interaction for final placement
 
 ## 🔐 Environment Variables
