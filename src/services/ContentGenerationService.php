@@ -94,7 +94,6 @@ class ContentGenerationService extends Component
             'craft\\ckeditor\\Field' => 'html',
             'craft\\fields\\PlainText' => 'plain',
             'craft\\fields\\Table' => 'plain',
-            'craft\\fields\\Matrix' => 'html',
             default => 'plain'
         };
     }
@@ -124,9 +123,6 @@ class ContentGenerationService extends Component
                 // Table field - process as structured content
                 return $this->processTableContent($content, $field);
 
-            case 'craft\\fields\\Matrix':
-                // Matrix field - process as HTML content
-                return $this->processHtmlContent($content);
 
             default:
                 // Default to plain text processing
@@ -141,7 +137,7 @@ class ContentGenerationService extends Component
     }
 
     /**
-     * Process content for HTML fields (Redactor, CKEditor, Matrix)
+     * Process content for HTML fields (Redactor, CKEditor)
      *
      * @param string $content Generated content
      * @return string Processed HTML content

@@ -53,7 +53,6 @@ class Settings extends Model
     public array $fieldTypeSupport = [
         'craft\\fields\\PlainText' => true,
         'craft\\fields\\Table' => true,
-        'craft\\fields\\Matrix' => true,
         'craft\\redactor\\Field' => true,
         'craft\\ckeditor\\Field' => true,
         'craft\\fieldlayoutelements\\entries\\EntryTitleField' => true,

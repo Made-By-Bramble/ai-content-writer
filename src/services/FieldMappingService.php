@@ -53,7 +53,6 @@ class FieldMappingService extends Component
             'craft\\ckeditor\\Field' => 'html',
             'craft\\fields\\PlainText' => 'plain',
             'craft\\fields\\Table' => 'plain',
-            'craft\\fields\\Matrix' => 'html',
             'craft\\fieldlayoutelements\\entries\\EntryTitleField' => 'plain',
             default => 'plain'
         };
@@ -72,7 +71,6 @@ class FieldMappingService extends Component
             'craft\\redactor\\Field' => 'api',
             'craft\\ckeditor\\Field' => 'api', 
             'craft\\fields\\Table' => 'special',
-            'craft\\fields\\Matrix' => 'special',
             'craft\\fieldlayoutelements\\entries\\EntryTitleField' => 'direct',
             default => 'direct'
         };
@@ -127,12 +125,6 @@ class FieldMappingService extends Component
                     'method' => 'table'
                 ];
                 
-            case 'craft\\fields\\Matrix':
-                return [
-                    'container' => $baseSelector,
-                    'input' => '.matrix-blocks',
-                    'method' => 'matrix'
-                ];
                 
             case 'craft\\fieldlayoutelements\\entries\\EntryTitleField':
                 return [
@@ -171,8 +163,6 @@ class FieldMappingService extends Component
             case 'craft\\fields\\Table':
                 return $this->processForTable($content, $field);
                 
-            case 'craft\\fields\\Matrix':
-                return $this->processForMatrix($content, $field);
                 
             default:
                 return $this->processForPlainText($content);
@@ -225,18 +215,6 @@ class FieldMappingService extends Component
         return $this->processForPlainText($content);
     }
 
-    /**
-     * Process content for Matrix fields
-     *
-     * @param string $content Content to process
-     * @param Field|null $field Matrix field instance
-     * @return string Content formatted for Matrix insertion
-     */
-    private function processForMatrix(string $content, ?Field $field = null): string
-    {
-        // Process as rich text for Matrix blocks
-        return $this->processForRichText($content);
-    }
 
     /**
      * Get JavaScript code for field insertion
@@ -262,8 +240,6 @@ class FieldMappingService extends Component
             case 'table':
                 return $this->getTableInsertionJS($selector);
                 
-            case 'matrix':
-                return $this->getMatrixInsertionJS($selector);
                 
             default:
                 return $this->getDirectInsertionJS($selector);
@@ -349,24 +325,6 @@ class FieldMappingService extends Component
         ";
     }
 
-    /**
-     * Get JavaScript for Matrix insertion
-     */
-    private function getMatrixInsertionJS(array $selector): string
-    {
-        return "
-            const fieldContainer = document.querySelector('{$selector['container']}');
-            if (fieldContainer) {
-                // For Matrix fields, we'll need to work with existing blocks
-                // This is a complex operation that would require more specific implementation
-                if (window.Craft && Craft.cp) {
-                    Craft.cp.displayNotice('Matrix content generated. Please manually add the content to your Matrix blocks.');
-                }
-                return true;
-            }
-            return false;
-        ";
-    }
 
     /**
      * Validate that a field can receive generated content
@@ -398,7 +356,7 @@ class FieldMappingService extends Component
             'insertionMethods' => [
                 'direct' => ['craft\\fields\\PlainText'],
                 'api' => ['craft\\redactor\\Field', 'craft\\ckeditor\\Field'],
-                'special' => ['craft\\fields\\Table', 'craft\\fields\\Matrix']
+                'special' => ['craft\\fields\\Table']
             ]
         ];
     }

@@ -30,7 +30,6 @@ Revolutionize your content workflow with intelligent AI-generated text for any f
 ### **⚙️ Flexible Field Support**
 - **Plain Text Fields**: Simple text content generation
 - **Rich Text Editors**: HTML-formatted content (Redactor, CKEditor)
-- **Matrix Fields**: Complex content blocks and structures
 - **Table Fields**: Structured data content
 - Dynamic field detection per entry type
 
@@ -151,7 +150,7 @@ Configure each entry type independently:
 - **Field Types Supported**:
   - Plain Text fields
   - Rich text editors (Redactor, CKEditor)
-  - Matrix and Table fields
+  - Table fields
 
 #### Field Type Support
 Control which field types can receive generated content:
@@ -159,7 +158,6 @@ Control which field types can receive generated content:
 - **Redactor**: Rich HTML content with formatting
 - **CKEditor**: Advanced rich text editing
 - **Table**: Structured content (manual insertion)
-- **Matrix**: Complex content blocks (manual insertion)
 
 ### **🔧 Advanced Settings**
 
@@ -290,7 +288,6 @@ Add to your dashboard for quick monitoring:
 - **Redactor**: HTML content with rich text editor integration
 - **CKEditor**: Advanced rich text with full formatting support
 - **Table**: Structured content (requires manual organization)
-- **Matrix**: Complex content blocks (requires manual block creation)
 
 ### **Field Insertion Methods**
 - **Direct**: Simple text fields with immediate insertion

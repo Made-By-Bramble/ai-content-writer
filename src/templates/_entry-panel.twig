@@ -300,8 +300,6 @@
             case 'craft\\fields\\Table':
                 return insertIntoTableField(fieldContainer, content);
                 
-            case 'craft\\fields\\Matrix':
-                return insertIntoMatrixField(fieldContainer, content);
                 
             default:
                 // Default to plain text insertion
@@ -373,11 +371,6 @@
         return true;
     }
     
-    function insertIntoMatrixField(fieldContainer, content) {
-        // For Matrix fields, show a message about manual insertion
-        Craft.cp.displayNotice('{{ "Matrix content generated. Please manually add the content to your Matrix blocks."|t("ai-content-writer") }}');
-        return true;
-    }
     
     // Utility function to escape HTML
     function escapeHtml(text) {

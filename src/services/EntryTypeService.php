@@ -172,7 +172,6 @@ class EntryTypeService extends Component
         return [
             'craft\\fields\\PlainText' => 'Plain Text',
             'craft\\fields\\Table' => 'Table',
-            'craft\\fields\\Matrix' => 'Matrix',
             'craft\\redactor\\Field' => 'Redactor',
             'craft\\ckeditor\\Field' => 'CKEditor'
         ];

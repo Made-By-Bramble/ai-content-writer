@@ -48,7 +48,6 @@ return [
     'Configure which field types can receive AI-generated content.' => 'Configure which field types can receive AI-generated content.',
     'Plain Text Fields' => 'Plain Text Fields',
     'Table Fields' => 'Table Fields',
-    'Matrix Fields' => 'Matrix Fields',
     'Redactor Fields' => 'Redactor Fields',
     'CKEditor Fields' => 'CKEditor Fields',
 
@@ -87,5 +86,4 @@ return [
 
     // Field insertion messages
     'Table content generated. Please manually structure the content into table rows and columns.' => 'Table content generated. Please manually structure the content into table rows and columns.',
-    'Matrix content generated. Please manually add the content to your Matrix blocks.' => 'Matrix content generated. Please manually add the content to your Matrix blocks.',
 ];
