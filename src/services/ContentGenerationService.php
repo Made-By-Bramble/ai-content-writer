@@ -50,7 +50,7 @@ class ContentGenerationService extends Component
         // Build context for generation
         $context = [
             'entryType' => $entry->getType()->handle,
-            'section' => $entry->getSection()->handle,
+            'section' => $entry->getSection() ? $entry->getSection()->handle : 'matrix-block',
             'field' => $fieldHandle,
             'format' => $fieldFormat,
             'existingContent' => $existingContent

@@ -6,6 +6,7 @@
     {% set entryTypeId = entry.type.id ?? (craft.app.request.getParam('typeId') ?? null) %}
     {% set sectionId = entry.section.id ?? (craft.app.request.getParam('sectionId') ?? null) %}
     
+    
     {# AI Content Writer Section #}
     <div class="ai-content-writer-panel" 
          data-entry-id="{{ entry.id ?? '' }}"
@@ -71,81 +72,302 @@
 </div>
 
 {% js %}
-// JavaScript for handling generation and field insertion
+// AI Content Writer - Context-aware initialization for main editor and slideout contexts
 (function() {
-    const panel = document.querySelector('.ai-content-writer-panel');
-    if (!panel) return;
+    'use strict';
     
-    const entryId = panel.dataset.entryId;
-    const entryTypeId = panel.dataset.entryTypeId;
-    const sectionId = panel.dataset.sectionId;
-    const isNewEntry = panel.dataset.isNewEntry === 'true';
-    
-    // Validate we have necessary information
-    if (!entryTypeId && !entryId) {
-        if (window.Craft && Craft.devMode) {
-            console.error('AI Content Writer: No entry type or entry ID available');
+    // Detect editing context (main editor vs slideout)
+    function getPluginContext(searchRoot = document) {
+        let slideoutContainer = null;
+        
+        if (searchRoot !== document) {
+            if (searchRoot.classList && searchRoot.classList.contains('slideout-container')) {
+                slideoutContainer = searchRoot;
+            } else {
+                slideoutContainer = searchRoot.querySelector('.slideout-container');
+            }
         }
-        return;
-    }
-    const fieldSelect = document.getElementById('ai-target-field');
-    const promptTextarea = document.getElementById('ai-prompt');
-    const generateBtn = document.getElementById('ai-generate-content');
-    const insertBtn = document.getElementById('ai-insert-content');
-    const insertBtnContainer = document.getElementById('ai-insert-button-container');
-    const preview = document.getElementById('ai-content-preview');
-    const previewContent = preview.querySelector('.preview-content');
-    
-    let generatedContent = '';
-    let selectedFieldInfo = null;
-    
-    // Load available fields for this entry
-    loadAvailableFields();
-    
-    function loadAvailableFields() {
-        // Prepare request data
-        const requestData = {
-            entryId: entryId || null,
-            typeId: entryTypeId || null,
-            sectionId: sectionId || null
+        
+        if (!slideoutContainer) {
+            slideoutContainer = document.querySelector('.slideout-container');
+        }
+        
+        const isSlideout = !!slideoutContainer;
+        
+        return {
+            type: isSlideout ? 'slideout' : 'main',
+            container: isSlideout ? slideoutContainer : document,
+            isSlideout: isSlideout,
+            isMainEditor: !isSlideout
         };
-
-        // Filter out null values
+    }
+    
+    // Initialize plugin panel in given context
+    function initializeAiContentWriter(searchRoot = document) {
+        let panel = null;
+        if (searchRoot === document) {
+            panel = document.querySelector('.ai-content-writer-panel');
+        } else {
+            panel = searchRoot.querySelector('.ai-content-writer-panel');
+            if (!panel && searchRoot.classList && searchRoot.classList.contains('ai-content-writer-panel')) {
+                panel = searchRoot;
+            }
+            if (!panel) {
+                const slideouts = searchRoot.querySelectorAll('.slideout-container');
+                for (let slideout of slideouts) {
+                    panel = slideout.querySelector('.ai-content-writer-panel');
+                    if (panel) break;
+                }
+            }
+        }
+        
+        if (!panel || panel.dataset.aiInitialized) {
+            return false;
+        }
+        
+        panel.dataset.aiInitialized = 'true';
+        const context = getPluginContext(searchRoot);
+        return setupPanelWithContext(panel, context);
+    }
+    
+    function setupPanelWithContext(panel, context) {
+        const entryData = getEntryContextData(panel);
+        
+        if (!entryData.entryTypeId && !entryData.entryId) {
+            console.error('AI Content Writer: No entry type or entry ID available in', context.type, 'context');
+            return false;
+        }
+        
+        return initializePanelFunctionality(panel, entryData, context);
+    }
+    
+    function getEntryContextData(panel) {
+        return {
+            entryId: panel.dataset.entryId || null,
+            entryTypeId: panel.dataset.entryTypeId || null,
+            isNewEntry: panel.dataset.isNewEntry === 'true'
+        };
+    }
+    
+    function initializePanelFunctionality(panel, entryData, context) {
+        const searchRoot = context.isSlideout ? context.container : document;
+        
+        // Find UI elements (handles namespaced IDs in slideouts)
+        const fieldSelect = searchRoot.querySelector('#ai-target-field') || 
+                           searchRoot.querySelector('[id$="-ai-target-field"]') ||
+                           searchRoot.querySelector('select[name*="ai-target-field"]');
+        const promptTextarea = searchRoot.querySelector('#ai-prompt') || 
+                              searchRoot.querySelector('[id$="-ai-prompt"]') ||
+                              searchRoot.querySelector('textarea[name*="ai-prompt"]');
+        const generateBtn = searchRoot.querySelector('#ai-generate-content') || 
+                           searchRoot.querySelector('[id$="-ai-generate-content"]') ||
+                           searchRoot.querySelector('button[id*="ai-generate-content"]');
+        const insertBtn = searchRoot.querySelector('#ai-insert-content') || 
+                         searchRoot.querySelector('[id$="-ai-insert-content"]') ||
+                         searchRoot.querySelector('button[id*="ai-insert-content"]');
+        const insertBtnContainer = searchRoot.querySelector('#ai-insert-button-container') || 
+                                  searchRoot.querySelector('[id$="-ai-insert-button-container"]') ||
+                                  searchRoot.querySelector('div[id*="ai-insert-button-container"]');
+        const preview = searchRoot.querySelector('#ai-content-preview') || 
+                       searchRoot.querySelector('[id$="-ai-content-preview"]') ||
+                       searchRoot.querySelector('div[id*="ai-content-preview"]');
+        
+        if (!fieldSelect || !promptTextarea || !generateBtn || !insertBtn || !insertBtnContainer || !preview) {
+            console.error('AI Content Writer: Could not find required UI elements in', context.type, 'context');
+            console.error('AI Content Writer: Missing elements details:', {
+                fieldSelect: !!fieldSelect,
+                promptTextarea: !!promptTextarea,
+                generateBtn: !!generateBtn,
+                insertBtn: !!insertBtn,
+                insertBtnContainer: !!insertBtnContainer,
+                preview: !!preview
+            });
+            return false;
+        }
+        
+        const previewContent = preview.querySelector('.preview-content');
+        
+        let generatedContent = '';
+        let selectedFieldInfo = null;
+        
+        loadAvailableFields(panel, entryData, context);
+        
+        // Event handlers
+        fieldSelect.addEventListener('change', function() {
+            const selectedOption = fieldSelect.options[fieldSelect.selectedIndex];
+            if (selectedOption.value) {
+                selectedFieldInfo = {
+                    handle: selectedOption.value,
+                    name: selectedOption.textContent,
+                    type: selectedOption.dataset.fieldType,
+                    format: selectedOption.dataset.format
+                };
+            } else {
+                selectedFieldInfo = null;
+            }
+            
+            // Clear preview when field changes
+            clearPreview();
+        });
+        
+        // Generate button handler
+        generateBtn.addEventListener('click', async function() {
+            const fieldHandle = fieldSelect.value;
+            const prompt = promptTextarea.value.trim();
+            
+            if (!fieldHandle || !prompt) {
+                Craft.cp.displayError('{{ "Please select a field and enter a prompt"|t("ai-content-writer") }}');
+                return;
+            }
+            
+            if (!selectedFieldInfo) {
+                Craft.cp.displayError('{{ "Field information not available"|t("ai-content-writer") }}');
+                return;
+            }
+            
+            // Update button state
+            generateBtn.disabled = true;
+            generateBtn.textContent = '{{ "Generating..."|t("ai-content-writer") }}';
+            clearPreview();
+            
+            try {
+                const actionUrl = Craft.getActionUrl("ai-content-writer/content/generate");
+                const response = await fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-Token': Craft.csrfTokenValue,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        entryId: entryData.entryId,
+                        fieldHandle: fieldHandle,
+                        prompt: prompt,
+                        typeId: entryData.entryTypeId
+                        // Note: sectionId is omitted - backend will determine it from entryId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    generatedContent = data.content;
+                    showPreview(data.content);
+                    Craft.cp.displayNotice('{{ "Content generated successfully"|t("ai-content-writer") }}');
+                } else {
+                    Craft.cp.displayError('{{ "Generation failed"|t("ai-content-writer") }}: ' + data.error);
+                }
+            } catch (error) {
+                console.error('AI Content Writer: Generation error:', error);
+                Craft.cp.displayError('{{ "Generation failed"|t("ai-content-writer") }}: ' + error.message);
+            } finally {
+                // Reset button state
+                generateBtn.disabled = false;
+                generateBtn.textContent = '{{ "Generate Content"|t("ai-content-writer") }}';
+            }
+        });
+        
+        // Insert button handler
+        insertBtn.addEventListener('click', function() {
+            if (!selectedFieldInfo || !generatedContent) {
+                Craft.cp.displayError('{{ "No content to insert"|t("ai-content-writer") }}');
+                return;
+            }
+            
+            // Attempt to insert content into the field
+            const inserted = insertContentIntoField(selectedFieldInfo, generatedContent, context);
+            
+            if (inserted) {
+                Craft.cp.displayNotice('{{ "Content inserted into field"|t("ai-content-writer") }}');
+                
+                // Reset UI
+                clearPreview();
+                promptTextarea.value = '';
+            } else {
+                Craft.cp.displayError('{{ "Could not insert content into field"|t("ai-content-writer") }}');
+            }
+        });
+        
+        function showPreview(content) {
+            // Format content for preview based on field type
+            let formattedContent = content;
+            
+            if (selectedFieldInfo && selectedFieldInfo.format === 'html') {
+                previewContent.innerHTML = formattedContent;
+            } else {
+                previewContent.textContent = formattedContent;
+            }
+            
+            preview.style.display = 'block';
+            insertBtnContainer.style.display = 'block';
+        }
+        
+        function clearPreview() {
+            preview.style.display = 'none';
+            insertBtnContainer.style.display = 'none';
+            previewContent.innerHTML = '';
+            generatedContent = '';
+        }
+        
+        return true;
+    }
+    
+    // Load available fields from backend
+    function loadAvailableFields(panel, entryData, context) {
         const cleanedData = Object.fromEntries(
-            Object.entries(requestData).filter(([_, v]) => v !== null)
+            Object.entries(entryData).filter(([_, v]) => v !== null)
         );
-
-        fetch('{{ actionUrl("ai-content-writer/content/get-available-fields") }}', {
+        
+        const actionUrl = Craft.getActionUrl("ai-content-writer/content/get-available-fields");
+        
+        fetch(actionUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-Token': '{{ craft.app.request.csrfToken }}',
+                'X-CSRF-Token': Craft.csrfTokenValue,
                 'Accept': 'application/json'
             },
             body: JSON.stringify(cleanedData)
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
-                populateFieldSelector(data.fields);
+                populateFieldSelector(data.fields, context);
                 
-                // Log entry type information for debugging (debug mode only)
-                if (data.entryType && window.Craft && Craft.devMode) {
-                    console.log('AI Content Writer: Loaded fields for', data.entryType.name, 
-                               data.entryInfo.isNewEntry ? '(new entry)' : '(existing entry)');
-                }
             } else {
-                // Keep error logging for important failures
-                console.error('Failed to load available fields:', data.error);
+                console.error('AI Content Writer: Failed to load available fields:', data.error);
             }
         })
         .catch(error => {
-            // Keep error logging for important failures
-            console.error('Error loading available fields:', error);
+            console.error('AI Content Writer: Error loading available fields:', error);
         });
     }
     
-    function populateFieldSelector(fields) {
+    function populateFieldSelector(fields, context) {
+        const searchRoot = context.isSlideout ? context.container : document;
+        const fieldSelect = searchRoot.querySelector('#ai-target-field') || 
+                           searchRoot.querySelector('[id$="-ai-target-field"]') ||
+                           searchRoot.querySelector('select[name*="ai-target-field"]');
+        
+        if (!fieldSelect) {
+            console.error('AI Content Writer: Could not find field selector in', context.type, 'context');
+            console.error('AI Content Writer: Tried selectors:', [
+                '#ai-target-field',
+                '[id$="-ai-target-field"]', 
+                'select[name*="ai-target-field"]'
+            ]);
+            return;
+        }
+        
         // Clear existing options except the first
         fieldSelect.innerHTML = '<option value="">' + {{ 'Select a field...'|t('ai-content-writer')|json_encode|raw }} + '</option>';
         
@@ -159,129 +381,16 @@
         });
     }
     
-    fieldSelect.addEventListener('change', function() {
-        const selectedOption = fieldSelect.options[fieldSelect.selectedIndex];
-        if (selectedOption.value) {
-            selectedFieldInfo = {
-                handle: selectedOption.value,
-                name: selectedOption.textContent,
-                type: selectedOption.dataset.fieldType,
-                format: selectedOption.dataset.format
-            };
-        } else {
-            selectedFieldInfo = null;
-        }
-        
-        // Clear preview when field changes
-        clearPreview();
-    });
-    
-    generateBtn.addEventListener('click', async function() {
-        const fieldHandle = fieldSelect.value;
-        const prompt = promptTextarea.value.trim();
-        
-        if (!fieldHandle || !prompt) {
-            Craft.cp.displayError('{{ "Please select a field and enter a prompt"|t("ai-content-writer") }}');
-            return;
-        }
-        
-        if (!selectedFieldInfo) {
-            Craft.cp.displayError('{{ "Field information not available"|t("ai-content-writer") }}');
-            return;
-        }
-        
-        // Update button state
-        generateBtn.disabled = true;
-        generateBtn.textContent = '{{ "Generating..."|t("ai-content-writer") }}';
-        clearPreview();
-        
-        try {
-            const response = await fetch('{{ actionUrl("ai-content-writer/content/generate") }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-Token': '{{ craft.app.request.csrfToken }}',
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    entryId: entryId,
-                    fieldHandle: fieldHandle,
-                    prompt: prompt,
-                    typeId: entryTypeId,
-                    sectionId: sectionId
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                generatedContent = data.content;
-                showPreview(data.content);
-                Craft.cp.displayNotice('{{ "Content generated successfully"|t("ai-content-writer") }}');
-            } else {
-                Craft.cp.displayError('{{ "Generation failed"|t("ai-content-writer") }}: ' + data.error);
-            }
-        } catch (error) {
-            // Keep error logging for important failures
-            console.error('Generation error:', error);
-            Craft.cp.displayError('{{ "Generation failed"|t("ai-content-writer") }}: ' + error.message);
-        } finally {
-            // Reset button state
-            generateBtn.disabled = false;
-            generateBtn.textContent = '{{ "Generate Content"|t("ai-content-writer") }}';
-        }
-    });
-    
-    insertBtn.addEventListener('click', function() {
-        if (!selectedFieldInfo || !generatedContent) {
-            Craft.cp.displayError('{{ "No content to insert"|t("ai-content-writer") }}');
-            return;
-        }
-        
-        // Attempt to insert content into the field
-        const inserted = insertContentIntoField(selectedFieldInfo, generatedContent);
-        
-        if (inserted) {
-            Craft.cp.displayNotice('{{ "Content inserted into field"|t("ai-content-writer") }}');
-            
-            // Reset UI
-            clearPreview();
-            promptTextarea.value = '';
-        } else {
-            Craft.cp.displayError('{{ "Could not insert content into field"|t("ai-content-writer") }}');
-        }
-    });
-    
-    function showPreview(content) {
-        // Format content for preview based on field type
-        let formattedContent = content;
-        
-        if (selectedFieldInfo && selectedFieldInfo.format === 'html') {
-            previewContent.innerHTML = formattedContent;
-        } else {
-            previewContent.textContent = formattedContent;
-        }
-        
-        preview.style.display = 'block';
-        insertBtnContainer.style.display = 'block';
-    }
-    
-    function clearPreview() {
-        preview.style.display = 'none';
-        insertBtnContainer.style.display = 'none';
-        previewContent.innerHTML = '';
-        generatedContent = '';
-    }
-    
-    function insertContentIntoField(fieldInfo, content) {
+    // Context-aware field insertion
+    function insertContentIntoField(fieldInfo, content, context) {
         const fieldHandle = fieldInfo.handle;
         const fieldType = fieldInfo.type;
         
-        // Find the target field in the entry form
-        const fieldContainer = document.querySelector(`[data-attribute="${fieldHandle}"]`);
+        // Find field container with context awareness
+        const fieldContainer = findFieldContainerInContext(fieldHandle, context);
         if (!fieldContainer) {
             if (window.Craft && Craft.devMode) {
-                console.error('Could not find field container for:', fieldHandle);
+                console.error('AI Content Writer: Could not find field container for:', fieldHandle, 'in', context.type, 'context');
             }
             return false;
         }
@@ -300,13 +409,32 @@
             case 'craft\\fields\\Table':
                 return insertIntoTableField(fieldContainer, content);
                 
-                
             default:
-                // Default to plain text insertion
                 return insertIntoPlainTextField(fieldContainer, content);
         }
     }
     
+    function findFieldContainerInContext(fieldHandle, context) {
+        const searchRoot = context.isSlideout ? context.container : document;
+        
+        const selectors = [
+            `[data-attribute="${fieldHandle}"]`,
+            `.field[data-attribute="${fieldHandle}"]`,
+            `#fields-${fieldHandle}`,
+            `[data-field="${fieldHandle}"]`
+        ];
+        
+        for (const selector of selectors) {
+            const container = searchRoot.querySelector(selector);
+            if (container) {
+                return container;
+            }
+        }
+        
+        return null;
+    }
+    
+    // Field insertion functions (unchanged from original)
     function insertIntoPlainTextField(fieldContainer, content) {
         const textarea = fieldContainer.querySelector('textarea');
         const input = fieldContainer.querySelector('input[type="text"]');
@@ -366,17 +494,94 @@
     }
     
     function insertIntoTableField(fieldContainer, content) {
-        // For table fields, show a message about manual insertion
         Craft.cp.displayNotice('{{ "Table content generated. Please manually structure the content into table rows and columns."|t("ai-content-writer") }}');
         return true;
     }
     
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAiContentWriter();
+        });
+    } else {
+        initializeAiContentWriter();
+    }
     
-    // Utility function to escape HTML
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    // Initialize for slideout containers
+    if (typeof Craft !== 'undefined') {
+        if (typeof $ !== 'undefined') {
+            $(document).on('slideout:ready slideout:loaded slideout:show slideout:open', function(event) {
+                setTimeout(function() {
+                    initializeAiContentWriter(event.target);
+                }, 100);
+            });
+            
+            $(document).on('slide:ready slide:loaded slide:show slide:open', function(event) {
+                setTimeout(function() {
+                    initializeAiContentWriter(event.target);
+                }, 100);
+            });
+        }
+        
+        // DOM mutation observer for dynamic content
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1) {
+                            if (node.classList && (
+                                node.classList.contains('slideout-container') ||
+                                node.classList.contains('slide-container') ||
+                                node.classList.contains('hud') ||
+                                node.classList.contains('modal')
+                            )) {
+                                setTimeout(function() {
+                                    initializeAiContentWriter(node);
+                                }, 150);
+                            }
+                            
+                            if (node.querySelectorAll) {
+                                const slideouts = node.querySelectorAll('.slideout-container, .slide-container, .hud, .modal');
+                                if (slideouts.length > 0) {
+                                    slideouts.forEach(function(slideout) {
+                                        setTimeout(function() {
+                                            initializeAiContentWriter(slideout);
+                                        }, 150);
+                                    });
+                                }
+                            }
+                            
+                            if (node.querySelectorAll) {
+                                const panels = node.querySelectorAll('.ai-content-writer-panel');
+                                if (panels.length > 0) {
+                                    setTimeout(function() {
+                                        initializeAiContentWriter(node);
+                                    }, 200);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'style']
+        });
+        
+        // Fallback: periodic check for uninitialized panels
+        setInterval(function() {
+            const uninitializedPanels = document.querySelectorAll('.ai-content-writer-panel:not([data-ai-initialized])');
+            if (uninitializedPanels.length > 0) {
+                uninitializedPanels.forEach(function(panel) {
+                    const container = panel.closest('.slideout-container, .slide-container, .hud, .modal') || document;
+                    initializeAiContentWriter(container);
+                });
+            }
+        }, 1000);
     }
     
 })();
