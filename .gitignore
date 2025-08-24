@@ -1,0 +1,45 @@
+# Dependencies
+/vendor/
+
+# Composer lock file (keep in version control for plugins)
+# composer.lock
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# PHPUnit
+.phpunit.result.cache
+
+# Coverage reports
+/coverage/
+clover.xml
+
+# Node modules (if any build tools are added)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment files
+.env
+.env.local
+.env.*.local

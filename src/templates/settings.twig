@@ -1,0 +1,526 @@
+{#
+# AI Content Writer - Settings Template
+# 
+# This template provides the comprehensive settings interface for the plugin,
+# including API configuration, entry type settings, field type support,
+# and advanced configuration options.
+#
+# Adapted from OpenAI Alt Generator settings template.
+#
+# @since 1.0.0
+# @author Made By Bramble - Phill Morgan
+#}
+
+{% import '_includes/forms' as forms %}
+
+<div id="ai-content-writer-settings">
+    {% css %}
+        /* Entry type configuration table spacing */
+        #ai-content-writer-settings .entry-type-config-table {
+            margin-bottom: 28px;
+        }
+
+        /* Field type support section styling */
+        #ai-content-writer-settings .field-type-support {
+            margin-bottom: 28px;
+        }
+        
+        /* Bulk operations section styling */
+        #ai-content-writer-settings .bulk-actions {
+            margin-top: 20px;
+            padding: 14px;
+            background: #f7f7f7;
+            border-radius: 3px;
+        }
+        
+        /* Danger button styling for destructive operations */
+        #ai-content-writer-settings .btn-danger {
+            background: #da5a47;
+            border-color: #da5a47;
+        }
+        
+        #ai-content-writer-settings .btn-danger:hover {
+            background: #c8412d;
+            border-color: #c8412d;
+        }
+        
+        /* Loading state styling for button interactions */
+        #ai-content-writer-settings .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        /* Status message styling */
+        #ai-content-writer-settings .success-message {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        #ai-content-writer-settings .error-message {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        /* Loading indicator with spinner and text */
+        #ai-content-writer-settings .loading-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        /* CSS spinner animation for loading states */
+        #ai-content-writer-settings .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Spinner rotation animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Warning message styling for important notices */
+        #ai-content-writer-settings .warning-message {
+            color: #856404;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 8px 12px;
+            border-radius: 3px;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        /* Model information display styling */
+        #ai-content-writer-settings #model-info {
+            font-size: 12px;
+            color: #8f98a3;
+        }
+
+        /* Disabled form element styling */
+        #ai-content-writer-settings select:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Field type checkboxes styling */
+        #ai-content-writer-settings .field-type-checkbox {
+            margin-bottom: 8px;
+        }
+
+        #ai-content-writer-settings .field-type-checkbox label {
+            font-weight: normal;
+        }
+    {% endcss %}
+
+    {{ forms.autosuggestField({
+        label: 'OpenAI API Key'|t('ai-content-writer'),
+        instructions: 'Enter your OpenAI API key. You can use environment variables like `$OPENAI_API_KEY`.'|t('ai-content-writer'),
+        id: 'openai-api-key',
+        name: 'openAiApiKey',
+        value: settings.openAiApiKey,
+        required: true,
+        suggestEnvVars: true,
+        placeholder: '$OPENAI_API_KEY',
+        errors: settings.getErrors('openAiApiKey')
+    }) }}
+
+    <div class="field">
+        <div class="heading">
+            <div class="instructions">
+                <p>{{ 'Test your OpenAI API connection to ensure it\'s working properly.'|t('ai-content-writer') }}</p>
+            </div>
+        </div>
+        <div class="input">
+            <button type="button" id="test-connection" class="btn secondary">
+                {{ 'Test Connection'|t('ai-content-writer') }}
+            </button>
+            <div id="connection-result" style="margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <div class="field" id="openai-model-field">
+        <div class="heading">
+            <label for="openai-model">{{ 'OpenAI Model'|t('ai-content-writer') }}</label>
+            <div class="instructions">
+                <p>{{ 'Select the OpenAI model to use for content generation.'|t('ai-content-writer') }}</p>
+            </div>
+        </div>
+        <div class="input">
+            <div class="select">
+                <select id="openai-model" name="openAiModel">
+                    <option value="">{{ 'Select a model...'|t('ai-content-writer') }}</option>
+                </select>
+            </div>
+            <div id="model-error" class="error-message" style="display: none;"></div>
+            <div id="model-info" class="light" style="margin-top: 8px; display: none;"></div>
+        </div>
+    </div>
+
+    {{ forms.textField({
+        label: 'Max Tokens'|t('ai-content-writer'),
+        instructions: 'Maximum tokens for content generation (100-4000). This setting overrides model defaults. Higher values allow longer content but increase API costs. Model defaults are now aligned with this setting (2000 tokens).'|t('ai-content-writer'),
+        id: 'max-tokens',
+        name: 'maxTokens',
+        value: settings.maxTokens,
+        type: 'number',
+        min: 100,
+        max: 4000,
+        size: 8,
+        errors: settings.getErrors('maxTokens')
+    }) }}
+
+    <div class="field">
+        <div class="warning-message">
+            <strong>{{ 'Important:'|t('ai-content-writer') }}</strong> 
+            {{ 'Token limits cannot exceed individual model maximums. The system will automatically cap your setting to each model\'s maximum context size.'|t('ai-content-writer') }}
+        </div>
+    </div>
+
+    {{ forms.textareaField({
+        label: 'Custom System Prompt'|t('ai-content-writer'),
+        instructions: 'Override the default system prompt used for content generation. Leave empty to use the default prompt.'|t('ai-content-writer'),
+        id: 'prompt-override',
+        name: 'promptOverride',
+        value: settings.promptOverride,
+        rows: 6,
+        placeholder: 'Leave empty to use default prompt...'|t('ai-content-writer'),
+        errors: settings.getErrors('promptOverride')
+    }) }}
+
+    <hr>
+
+    <h2>{{ 'Field Type Support'|t('ai-content-writer') }}</h2>
+    <p>{{ 'Configure which field types can receive AI-generated content.'|t('ai-content-writer') }}</p>
+
+    <div class="field-type-support">
+        {% for fieldClass, friendlyName in {
+            'craft\\\\fieldlayoutelements\\\\entries\\\\EntryTitleField': 'Title Fields',
+            'craft\\\\fields\\\\PlainText': 'Plain Text Fields',
+            'craft\\\\fields\\\\Table': 'Table Fields',
+            'craft\\\\fields\\\\Matrix': 'Matrix Fields',
+            'craft\\\\redactor\\\\Field': 'Redactor Fields',
+            'craft\\\\ckeditor\\\\Field': 'CKEditor Fields'
+        } %}
+            <div class="field-type-checkbox">
+                {{ forms.checkbox({
+                    label: friendlyName|t('ai-content-writer'),
+                    name: 'fieldTypeSupport[' ~ fieldClass ~ ']',
+                    value: '1',
+                    checked: settings.fieldTypeSupport[fieldClass] ?? false
+                }) }}
+            </div>
+        {% endfor %}
+    </div>
+
+    <hr>
+
+    <h2>{{ 'Entry Type Configuration'|t('ai-content-writer') }}</h2>
+    <p>{{ 'Configure content generation settings for each entry type.'|t('ai-content-writer') }}</p>
+
+    {% set entryTypes = craft.app.plugins.getPlugin('ai-content-writer').entryType.getAllEntryTypesWithStatus() %}
+    
+    {% if entryTypes|length == 0 %}
+        <div class="zilch">
+            <p>{{ 'No entry types found. Please create at least one entry type to use this plugin.'|t('ai-content-writer') }}</p>
+        </div>
+    {% else %}
+        <div class="tableview">
+            <table class="data fullwidth entry-type-config-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'Entry Type'|t('ai-content-writer') }}</th>
+                        <th scope="col">{{ 'Section'|t('ai-content-writer') }}</th>
+                        <th scope="col">{{ 'Enable Generation'|t('ai-content-writer') }}</th>
+                        <th scope="col">{{ 'Available Fields'|t('ai-content-writer') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entryType in entryTypes %}
+                        {% set typeSettings = settings.entryTypeSettings[entryType.id] ?? {} %}
+                        <tr data-entry-type-id="{{ entryType.id }}">
+                            <td>
+                                <strong>{{ entryType.name }}</strong>
+                                <div class="light smalltext">{{ entryType.handle }}</div>
+                            </td>
+                            
+                            <td>
+                                <strong>{{ entryType.section }}</strong>
+                                <div class="light smalltext">{{ entryType.sectionHandle }}</div>
+                            </td>
+                            
+                            <td>
+                                {{ forms.lightswitch({
+                                    name: 'entryTypeSettings[' ~ entryType.id ~ '][enabled]',
+                                    value: '1',
+                                    on: typeSettings.enabled ?? false,
+                                    small: true
+                                }) }}
+                            </td>
+                            
+                            <td>
+                                {% if entryType.availableFields|length > 0 %}
+                                    <div class="light smalltext">
+                                        {{ entryType.availableFields|length }} {{ 'compatible fields'|t('ai-content-writer') }}
+                                    </div>
+                                    <ul class="light" style="font-size: 12px; margin-top: 4px;">
+                                        {% for field in entryType.availableFields %}
+                                            <li>{{ field.name }} ({{ field.handle }})</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <span class="light">{{ 'No compatible fields'|t('ai-content-writer') }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    <hr>
+
+    <div class="advanced-settings">
+        <h2>{{ 'Advanced Settings'|t('ai-content-writer') }}</h2>
+        
+        {{ forms.textField({
+            label: 'Max Retries'|t('ai-content-writer'),
+            instructions: 'Maximum number of retry attempts for failed API requests (1-10).'|t('ai-content-writer'),
+            id: 'max-retries',
+            name: 'maxRetries',
+            value: settings.maxRetries,
+            type: 'number',
+            min: 1,
+            max: 10,
+            size: 5,
+            errors: settings.getErrors('maxRetries')
+        }) }}
+
+        {{ forms.textField({
+            label: 'API Timeout (seconds)'|t('ai-content-writer'),
+            instructions: 'Timeout in seconds for OpenAI API requests (10-120). Longer timeouts recommended for content generation.'|t('ai-content-writer'),
+            id: 'api-timeout',
+            name: 'apiTimeout',
+            value: settings.apiTimeout,
+            type: 'number',
+            min: 10,
+            max: 120,
+            size: 5,
+            errors: settings.getErrors('apiTimeout')
+        }) }}
+    </div>
+
+</div>
+
+{% js %}
+/**
+ * AI Content Writer Settings - JavaScript Module
+ * 
+ * Handles dynamic functionality for the settings page including:
+ * - API connection testing with real-time feedback
+ * - Dynamic model loading from YAML configurations
+ * - Form interaction management and validation
+ */
+(function() {
+    'use strict';
+    
+    /**
+     * Initialize all settings page functionality
+     */
+    function init() {
+        setupConnectionTesting();
+        loadAvailableModels();
+        setupFormValidation();
+    }
+    
+    /**
+     * Set up API connection testing functionality
+     */
+    function setupConnectionTesting() {
+        // Craft 5 auto-prefixes all element IDs with "settings-"
+        const testButton = document.getElementById('settings-test-connection');
+        const resultDiv = document.getElementById('settings-connection-result');
+        
+        if (!testButton || !resultDiv) return;
+        
+        testButton.addEventListener('click', function() {
+            testButton.disabled = true;
+            testButton.textContent = '{{ "Testing..."|t("ai-content-writer") }}';
+            resultDiv.innerHTML = '<div class="loading-indicator"><div class="spinner"></div>{{ "Testing connection..."|t("ai-content-writer") }}</div>';
+            
+            // Get current API key value (Craft 5 auto-prefixes settings fields)
+            const apiKeyField = document.getElementById('settings-openai-api-key');
+            const apiKey = apiKeyField ? apiKeyField.value : '';
+            
+            if (!apiKey.trim()) {
+                showConnectionResult(false, '{{ "Please enter an API key first"|t("ai-content-writer") }}');
+                resetTestButton();
+                return;
+            }
+            
+            fetch('{{ actionUrl("ai-content-writer/content/test-connection") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': '{{ craft.app.request.csrfToken }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                showConnectionResult(data.success, data.message);
+            })
+            .catch(error => {
+                console.error('Connection test error:', error);
+                showConnectionResult(false, '{{ "Connection test failed: "|t("ai-content-writer") }}' + error.message);
+            })
+            .finally(() => {
+                resetTestButton();
+            });
+        });
+        
+        function showConnectionResult(success, message) {
+            const className = success ? 'success-message' : 'error-message';
+            const icon = success ? '✓' : '✗';
+            resultDiv.innerHTML = `<span class="${className}">${icon} ${message}</span>`;
+        }
+        
+        function resetTestButton() {
+            testButton.disabled = false;
+            testButton.textContent = '{{ "Test Connection"|t("ai-content-writer") }}';
+        }
+    }
+    
+    /**
+     * Load available OpenAI models from configuration
+     */
+    function loadAvailableModels() {
+        const modelSelect = document.getElementById('settings-openai-model');
+        const modelInfo = document.getElementById('settings-model-info');
+        const modelError = document.getElementById('settings-model-error');
+        
+        if (!modelSelect) return;
+        
+        // Set current value if available
+        const currentValue = '{{ settings.openAiModel }}';
+        
+        // Add a basic set of models for now
+        // In a full implementation, this would load from the model configuration service
+        const models = [
+            { value: 'gpt-5', label: 'GPT-5 (Recommended)', priority: 10 },
+            { value: 'gpt-4o', label: 'GPT-4o', priority: 9 },
+            { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', priority: 8 },
+            { value: 'gpt-4', label: 'GPT-4', priority: 7 }
+        ];
+        
+        // Clear existing options except the first
+        while (modelSelect.children.length > 1) {
+            modelSelect.removeChild(modelSelect.lastChild);
+        }
+        
+        // Add model options
+        models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model.value;
+            option.textContent = model.label;
+            if (model.value === currentValue) {
+                option.selected = true;
+            }
+            modelSelect.appendChild(option);
+        });
+        
+        // If no current value is set, select the default (GPT-5)
+        if (!currentValue && models.length > 0) {
+            modelSelect.value = 'gpt-5';
+            modelSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Show model info when selection changes
+        modelSelect.addEventListener('change', function() {
+            if (this.value) {
+                const selectedModel = models.find(m => m.value === this.value);
+                if (selectedModel && modelInfo) {
+                    modelInfo.textContent = `Selected: ${selectedModel.label}`;
+                    modelInfo.style.display = 'block';
+                }
+                if (modelError) {
+                    modelError.style.display = 'none';
+                }
+            } else {
+                if (modelInfo) {
+                    modelInfo.style.display = 'none';
+                }
+            }
+        });
+        
+        // Trigger change event if there's a current value
+        if (currentValue && modelSelect.value === currentValue) {
+            modelSelect.dispatchEvent(new Event('change'));
+        }
+    }
+    
+    /**
+     * Set up form validation
+     */
+    function setupFormValidation() {
+        const form = document.querySelector('#content form');
+        if (!form) return;
+        
+        // Validate max tokens field (Craft 5 auto-prefixes settings fields)
+        const maxTokensField = document.getElementById('settings-max-tokens');
+        if (maxTokensField) {
+            maxTokensField.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                if (value < 100 || value > 4000) {
+                    this.setCustomValidity('{{ "Max tokens must be between 100 and 4000"|t("ai-content-writer") }}');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
+        
+        // Validate retry field (Craft 5 auto-prefixes settings fields)
+        const maxRetriesField = document.getElementById('settings-max-retries');
+        if (maxRetriesField) {
+            maxRetriesField.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                if (value < 1 || value > 10) {
+                    this.setCustomValidity('{{ "Max retries must be between 1 and 10"|t("ai-content-writer") }}');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
+        
+        // Validate timeout field (Craft 5 auto-prefixes settings fields)
+        const apiTimeoutField = document.getElementById('settings-api-timeout');
+        if (apiTimeoutField) {
+            apiTimeoutField.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                if (value < 10 || value > 120) {
+                    this.setCustomValidity('{{ "API timeout must be between 10 and 120 seconds"|t("ai-content-writer") }}');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+    
+})();
+{% endjs %}

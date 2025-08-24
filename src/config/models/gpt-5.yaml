@@ -1,0 +1,38 @@
+# Model Configuration for GPT-5
+model:
+  id: "gpt-5"
+  name: "GPT-5"
+  friendly_name: "GPT-5 (Latest Vision Model)"
+  description: "Latest GPT-5 model with advanced vision capabilities"
+  
+capabilities:
+  vision: true
+  reasoning: false
+  multimodal: true
+  
+api_parameters:
+  token_parameter: "max_completion_tokens"
+  default_token_limit: 2000
+  supports_temperature: true
+  default_temperature: 0.1
+  max_temperature: 2.0
+  min_temperature: 0.0
+  
+metadata:
+  owner: "openai"
+  release_date: "2025-08-07"
+  deprecation_date: null
+  priority: 1000
+  cost_tier: "premium"
+  speed_tier: "fast"
+  
+ui_display:
+  show_in_dropdown: true
+  category: "GPT-5 Series"
+  recommended: true
+  badge: "Latest"
+  
+version_info:
+  api_version: "2024-02-01"
+  supports_structured_output: true
+  max_context_tokens: 128000
