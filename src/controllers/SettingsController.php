@@ -219,10 +219,13 @@ class SettingsController extends Controller
             $success = Craft::$app->getPlugins()->savePluginSettings($plugin, $settings->getAttributes());
             
             if ($success) {
-                Craft::info(
-                    "Field type support settings updated: " . json_encode($fieldTypeSupport),
-                    'ai-content-writer'
-                );
+                // Log settings changes only in debug mode to avoid exposing sensitive data
+                if (Craft::$app->getConfig()->general->devMode) {
+                    Craft::info(
+                        "Field type support settings updated: " . json_encode($fieldTypeSupport),
+                        'ai-content-writer'
+                    );
+                }
                 
                 return $this->asJson([
                     'success' => true,

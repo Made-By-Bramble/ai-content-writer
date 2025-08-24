@@ -338,9 +338,10 @@ class FieldMappingService extends Component
             if (fieldContainer) {
                 const tableBody = fieldContainer.querySelector('{$selector['input']}');
                 if (tableBody) {
-                    // For now, alert the user to manually insert table content
-                    alert('Table content generated. Please manually structure the content into table rows and columns.');
-                    console.log('Table content:', generatedContent);
+                    // Show notification instead of alert
+                    if (window.Craft && Craft.cp) {
+                        Craft.cp.displayNotice('Table content generated. Please manually structure the content into table rows and columns.');
+                    }
                     return true;
                 }
             }
@@ -358,8 +359,9 @@ class FieldMappingService extends Component
             if (fieldContainer) {
                 // For Matrix fields, we'll need to work with existing blocks
                 // This is a complex operation that would require more specific implementation
-                alert('Matrix content generated. Please manually add the content to your Matrix blocks.');
-                console.log('Matrix content:', generatedContent);
+                if (window.Craft && Craft.cp) {
+                    Craft.cp.displayNotice('Matrix content generated. Please manually add the content to your Matrix blocks.');
+                }
                 return true;
             }
             return false;

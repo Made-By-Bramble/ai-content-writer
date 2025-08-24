@@ -80,11 +80,13 @@ class OpenAiService extends Component
             ]
         ];
 
-        // Log the request for debugging
-        Craft::info(
-            "Processing content generation request with prompt: " . substr($prompt, 0, 100) . (strlen($prompt) > 100 ? '...' : ''),
-            'ai-content-writer'
-        );
+        // Log the request for debugging (debug mode only)
+        if (Craft::$app->getConfig()->general->devMode) {
+            Craft::info(
+                "Processing content generation request with prompt: " . substr($prompt, 0, 100) . (strlen($prompt) > 100 ? '...' : ''),
+                'ai-content-writer'
+            );
+        }
 
         // Call OpenAI API with retry logic for resilience
         $content = $this->callOpenAiWithRetry($messages, $settings->maxRetries);
@@ -195,10 +197,12 @@ class OpenAiService extends Component
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
-                Craft::info(
-                    "OpenAI API attempt {$attempt}/{$maxRetries}",
-                    'ai-content-writer'
-                );
+                if (Craft::$app->getConfig()->general->devMode) {
+                    Craft::info(
+                        "OpenAI API attempt {$attempt}/{$maxRetries}",
+                        'ai-content-writer'
+                    );
+                }
 
                 // Build parameters based on model requirements
                 $model = $this->getConfiguredModel();
@@ -222,44 +226,48 @@ class OpenAiService extends Component
                     $parameters['reasoning_effort'] = $modelParams['reasoning_effort'];
                 }
                 
-                // Enhanced parameter logging with settings source
-                $settings = Plugin::getInstance()->getSettings();
-                $paramInfo = "Using {$modelParams['token_param']}={$modelParams['token_value']}";
-                if (isset($modelParams['temperature'])) {
-                    $paramInfo .= " and temperature={$modelParams['temperature']}";
-                } else {
-                    $paramInfo .= " (using default temperature)";
-                }
-                if (isset($modelParams['reasoning_effort'])) {
-                    $paramInfo .= " and reasoning_effort={$modelParams['reasoning_effort']}";
+                // Enhanced parameter logging with settings source (debug mode only)
+                if (Craft::$app->getConfig()->general->devMode) {
+                    $settings = Plugin::getInstance()->getSettings();
+                    $paramInfo = "Using {$modelParams['token_param']}={$modelParams['token_value']}";
+                    if (isset($modelParams['temperature'])) {
+                        $paramInfo .= " and temperature={$modelParams['temperature']}";
+                    } else {
+                        $paramInfo .= " (using default temperature)";
+                    }
+                    if (isset($modelParams['reasoning_effort'])) {
+                        $paramInfo .= " and reasoning_effort={$modelParams['reasoning_effort']}";
+                    }
+                    
+                    // Indicate source of token limit
+                    if ($settings && $settings->maxTokens) {
+                        $paramInfo .= " (from settings override)";
+                    } else {
+                        $paramInfo .= " (from YAML default)";
+                    }
+                    
+                    Craft::info(
+                        "Parameters for model '{$model}': {$paramInfo}",
+                        'ai-content-writer'
+                    );
                 }
                 
-                // Indicate source of token limit
-                if ($settings && $settings->maxTokens) {
-                    $paramInfo .= " (from settings override)";
-                } else {
-                    $paramInfo .= " (from YAML default)";
+                // Enhanced request logging (debug mode only)
+                if (Craft::$app->getConfig()->general->devMode) {
+                    Craft::info('OpenAI Request: ' . json_encode([
+                        'model' => $model,
+                        'parameters' => array_merge($parameters, [
+                            // Don't log the full messages content for brevity, just structure info
+                            'messages' => [
+                                'count' => count($parameters['messages']),
+                                'system_prompt_length' => strlen($parameters['messages'][0]['content'] ?? ''),
+                                'user_prompt_length' => strlen($parameters['messages'][1]['content'] ?? '')
+                            ]
+                        ]),
+                        'attempt' => $attempt,
+                        'max_retries' => $maxRetries
+                    ]), 'ai-content-writer');
                 }
-                
-                Craft::info(
-                    "Parameters for model '{$model}': {$paramInfo}",
-                    'ai-content-writer'
-                );
-                
-                // Enhanced request logging
-                Craft::info('OpenAI Request: ' . json_encode([
-                    'model' => $model,
-                    'parameters' => array_merge($parameters, [
-                        // Don't log the full messages content for brevity, just structure info
-                        'messages' => [
-                            'count' => count($parameters['messages']),
-                            'system_prompt_length' => strlen($parameters['messages'][0]['content'] ?? ''),
-                            'user_prompt_length' => strlen($parameters['messages'][1]['content'] ?? '')
-                        ]
-                    ]),
-                    'attempt' => $attempt,
-                    'max_retries' => $maxRetries
-                ]), 'ai-content-writer');
                 
                 // Validate token parameters before making the call
                 $tokenParam = $modelParams['token_param'];
@@ -280,19 +288,21 @@ class OpenAiService extends Component
 
                 $content = $response->choices[0]->message->content ?? '';
                 
-                // Enhanced response logging
-                Craft::info('OpenAI Response: ' . json_encode([
-                    'content_length' => strlen($content),
-                    'finish_reason' => $response->choices[0]->finishReason ?? 'unknown',
-                    'usage' => [
-                        'prompt_tokens' => $response->usage->promptTokens ?? null,
-                        'completion_tokens' => $response->usage->completionTokens ?? null,
-                        'total_tokens' => $response->usage->totalTokens ?? null
-                    ],
-                    'model_used' => $response->model ?? $model,
-                    'choices_count' => count($response->choices),
-                    'attempt' => $attempt
-                ]), 'ai-content-writer');
+                // Enhanced response logging (debug mode only)
+                if (Craft::$app->getConfig()->general->devMode) {
+                    Craft::info('OpenAI Response: ' . json_encode([
+                        'content_length' => strlen($content),
+                        'finish_reason' => $response->choices[0]->finishReason ?? 'unknown',
+                        'usage' => [
+                            'prompt_tokens' => $response->usage->promptTokens ?? null,
+                            'completion_tokens' => $response->usage->completionTokens ?? null,
+                            'total_tokens' => $response->usage->totalTokens ?? null
+                        ],
+                        'model_used' => $response->model ?? $model,
+                        'choices_count' => count($response->choices),
+                        'attempt' => $attempt
+                    ]), 'ai-content-writer');
+                }
                 
                 // Log the response for debugging empty responses
                 if (empty($content)) {
@@ -312,11 +322,6 @@ class OpenAiService extends Component
                             'ai-content-writer'
                         );
                     }
-                } else {
-                    Craft::info(
-                        "OpenAI returned content: " . substr($content, 0, 100) . (strlen($content) > 100 ? '...' : ''),
-                        'ai-content-writer'
-                    );
                 }
 
                 return $content;
@@ -336,10 +341,12 @@ class OpenAiService extends Component
                     unset($retryParameters[$modelParams['token_param']]);
                     $retryParameters[$altTokenParam] = $tokenValue;
                     
-                    Craft::info(
-                        "Retrying with alternative token parameter: {$altTokenParam}",
-                        'ai-content-writer'
-                    );
+                    if (Craft::$app->getConfig()->general->devMode) {
+                        Craft::info(
+                            "Retrying with alternative token parameter: {$altTokenParam}",
+                            'ai-content-writer'
+                        );
+                    }
                 }
                 
                 // Handle temperature parameter errors
@@ -348,10 +355,12 @@ class OpenAiService extends Component
                     // Remove temperature parameter to use model default
                     unset($retryParameters['temperature']);
                     
-                    Craft::info(
-                        "Retrying without temperature parameter (using model default)",
-                        'ai-content-writer'
-                    );
+                    if (Craft::$app->getConfig()->general->devMode) {
+                        Craft::info(
+                            "Retrying without temperature parameter (using model default)",
+                            'ai-content-writer'
+                        );
+                    }
                 }
                 
                 // Attempt retry with adjusted parameters
@@ -360,19 +369,21 @@ class OpenAiService extends Component
                         $response = $this->getClient()->chat()->create($retryParameters);
                         $content = $response->choices[0]->message->content ?? '';
                         
-                        // Enhanced retry response logging
-                        Craft::info('OpenAI Retry Response: ' . json_encode([
-                            'content_length' => strlen($content),
-                            'finish_reason' => $response->choices[0]->finishReason ?? 'unknown',
-                            'usage' => [
-                                'prompt_tokens' => $response->usage->promptTokens ?? null,
-                                'completion_tokens' => $response->usage->completionTokens ?? null,
-                                'total_tokens' => $response->usage->totalTokens ?? null
-                            ],
-                            'model_used' => $response->model ?? $model,
-                            'attempt' => $attempt,
-                            'retry_parameters' => array_keys(array_diff_key($retryParameters, $parameters))
-                        ]), 'ai-content-writer');
+                        // Enhanced retry response logging (debug mode only)
+                        if (Craft::$app->getConfig()->general->devMode) {
+                            Craft::info('OpenAI Retry Response: ' . json_encode([
+                                'content_length' => strlen($content),
+                                'finish_reason' => $response->choices[0]->finishReason ?? 'unknown',
+                                'usage' => [
+                                    'prompt_tokens' => $response->usage->promptTokens ?? null,
+                                    'completion_tokens' => $response->usage->completionTokens ?? null,
+                                    'total_tokens' => $response->usage->totalTokens ?? null
+                                ],
+                                'model_used' => $response->model ?? $model,
+                                'attempt' => $attempt,
+                                'retry_parameters' => array_keys(array_diff_key($retryParameters, $parameters))
+                            ]), 'ai-content-writer');
+                        }
                         
                         // Log retry response for debugging
                         if (empty($content)) {
@@ -392,17 +403,12 @@ class OpenAiService extends Component
                                     'ai-content-writer'
                                 );
                             }
-                        } else {
-                            Craft::info(
-                                "OpenAI retry returned content: " . substr($content, 0, 100) . (strlen($content) > 100 ? '...' : ''),
-                                'ai-content-writer'
-                            );
                         }
                         
                         return $content;
                         
                     } catch (Throwable $retryException) {
-                        // If retry also fails, continue with original error handling
+                        // If retry also fails, continue with original error handling (keep error logging)
                         Craft::error(
                             "Retry with alternative parameters also failed: " . $retryException->getMessage(),
                             'ai-content-writer'

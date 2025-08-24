@@ -7,9 +7,7 @@ use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\elements\Entry;
 use craft\events\DefineHtmlEvent;
-use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
-use craft\services\Dashboard;
 use craft\web\UrlManager;
 use MadeByBramble\AiContentWriter\models\Settings;
 use MadeByBramble\AiContentWriter\services\OpenAiService;
@@ -19,7 +17,6 @@ use MadeByBramble\AiContentWriter\services\EntryTypeService;
 use MadeByBramble\AiContentWriter\services\FieldMappingService;
 use MadeByBramble\AiContentWriter\controllers\ContentController;
 use MadeByBramble\AiContentWriter\controllers\SettingsController;
-use MadeByBramble\AiContentWriter\widgets\ContentGenerationStatsWidget;
 use yii\base\Event;
 
 /**
@@ -92,7 +89,6 @@ class Plugin extends BasePlugin
         // Defer initialization until Craft is ready to avoid timing issues
         Craft::$app->onInit(function () {
             $this->registerTemplateHooks();
-            $this->registerWidgets();
             $this->registerCpUrlRules();
         });
     }
@@ -202,20 +198,6 @@ class Plugin extends BasePlugin
     }
 
     /**
-     * Register widgets for the dashboard
-     */
-    private function registerWidgets(): void
-    {
-        Event::on(
-            Dashboard::class,
-            Dashboard::EVENT_REGISTER_WIDGET_TYPES,
-            function (RegisterComponentTypesEvent $event) {
-                $event->types[] = ContentGenerationStatsWidget::class;
-            }
-        );
-    }
-
-    /**
      * Register CP URL rules for AJAX endpoints
      * 
      * This method registers the control panel URL rules needed for the plugin's
@@ -230,7 +212,6 @@ class Plugin extends BasePlugin
                 $event->rules['ai-content-writer/content/get-available-fields'] = 'ai-content-writer/content/get-available-fields';
                 $event->rules['ai-content-writer/content/generate'] = 'ai-content-writer/content/generate';
                 $event->rules['ai-content-writer/content/test-connection'] = 'ai-content-writer/content/test-connection';
-                $event->rules['ai-content-writer/content/generate-batch'] = 'ai-content-writer/content/generate-batch';
                 $event->rules['ai-content-writer/content/get-field-mapping'] = 'ai-content-writer/content/get-field-mapping';
                 $event->rules['ai-content-writer/content/get-stats'] = 'ai-content-writer/content/get-stats';
             }

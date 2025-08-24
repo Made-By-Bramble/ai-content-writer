@@ -61,11 +61,13 @@ class ContentGenerationService extends Component
             $context['entryTitle'] = $entry->title;
         }
 
-        // Log the generation attempt
-        Craft::info(
-            "Generating content for entry '{$entry->title}' (ID: {$entry->id}), field '{$fieldHandle}', format: {$context['format']}",
-            'ai-content-writer'
-        );
+        // Log the generation attempt (debug mode only)
+        if (Craft::$app->getConfig()->general->devMode) {
+            Craft::info(
+                "Generating content for entry '{$entry->title}' (ID: {$entry->id}), field '{$fieldHandle}', format: {$context['format']}",
+                'ai-content-writer'
+            );
+        }
 
         // Generate content via OpenAI
         $content = Plugin::getInstance()->openAi->generateContent($prompt, $context);
@@ -128,10 +130,12 @@ class ContentGenerationService extends Component
 
             default:
                 // Default to plain text processing
-                Craft::info(
-                    "Unknown field type '{$fieldClass}', defaulting to plain text processing",
-                    'ai-content-writer'
-                );
+                if (Craft::$app->getConfig()->general->devMode) {
+                    Craft::info(
+                        "Unknown field type '{$fieldClass}', defaulting to plain text processing",
+                        'ai-content-writer'
+                    );
+                }
                 return $this->processPlainTextContent($content);
         }
     }
@@ -250,36 +254,4 @@ class ContentGenerationService extends Component
         return $fields;
     }
 
-    /**
-     * Generate content for multiple fields in batch
-     *
-     * @param Entry $entry Entry to generate content for
-     * @param array $fieldPrompts Array of fieldHandle => prompt pairs
-     * @return array Results array with field handles as keys
-     */
-    public function generateBatch(Entry $entry, array $fieldPrompts): array
-    {
-        $results = [];
-
-        foreach ($fieldPrompts as $fieldHandle => $prompt) {
-            try {
-                $results[$fieldHandle] = [
-                    'success' => true,
-                    'content' => $this->generateForEntry($entry, $fieldHandle, $prompt)
-                ];
-            } catch (\Exception $e) {
-                $results[$fieldHandle] = [
-                    'success' => false,
-                    'error' => $e->getMessage()
-                ];
-
-                Craft::error(
-                    "Batch content generation failed for field '{$fieldHandle}': " . $e->getMessage(),
-                    'ai-content-writer'
-                );
-            }
-        }
-
-        return $results;
-    }
 }

@@ -380,7 +380,7 @@
                 showConnectionResult(data.success, data.message);
             })
             .catch(error => {
-                console.error('Connection test error:', error);
+                // Keep error handling but remove console.error for production
                 showConnectionResult(false, '{{ "Connection test failed: "|t("ai-content-writer") }}' + error.message);
             })
             .finally(() => {

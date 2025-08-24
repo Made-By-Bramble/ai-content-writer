@@ -56,18 +56,24 @@ class ContentController extends Controller
         if ($entry) {
             // Existing entry - get type from entry
             $entryType = $entry->getType();
-            Craft::info("Found existing entry {$entryId}, type: {$entryType->handle}", 'ai-content-writer');
+            if (Craft::$app->getConfig()->general->devMode) {
+                Craft::info("Found existing entry {$entryId}, type: {$entryType->handle}", 'ai-content-writer');
+            }
         } elseif ($typeId && is_numeric($typeId)) {
             // New entry - get type by ID
             $entryType = Craft::$app->getEntries()->getEntryTypeById($typeId);
-            Craft::info("New entry detected for generation, using typeId {$typeId}, type: " . ($entryType ? $entryType->handle : 'not found'), 'ai-content-writer');
+            if (Craft::$app->getConfig()->general->devMode) {
+                Craft::info("New entry detected for generation, using typeId {$typeId}, type: " . ($entryType ? $entryType->handle : 'not found'), 'ai-content-writer');
+            }
         } elseif ($sectionId && is_numeric($sectionId)) {
             // Fallback - get first entry type from section
             $section = Craft::$app->getEntries()->getSectionById($sectionId);
             if ($section) {
                 $entryTypes = $section->getEntryTypes();
                 $entryType = !empty($entryTypes) ? $entryTypes[0] : null;
-                Craft::info("Using first entry type from section {$sectionId}: " . ($entryType ? $entryType->handle : 'none found'), 'ai-content-writer');
+                if (Craft::$app->getConfig()->general->devMode) {
+                    Craft::info("Using first entry type from section {$sectionId}: " . ($entryType ? $entryType->handle : 'none found'), 'ai-content-writer');
+                }
             }
         }
 
@@ -203,12 +209,7 @@ class ContentController extends Controller
                 
                 return $this->asJson([
                     'success' => false,
-                    'error' => "Field '{$fieldHandle}' does not exist in this entry type. Available fields: " . implode(', ', $availableFields),
-                    'debug' => [
-                        'requestedField' => $fieldHandle,
-                        'entryType' => $entryType->handle,
-                        'availableFields' => $availableFields
-                    ]
+                    'error' => "Field '{$fieldHandle}' does not exist in this entry type. Available fields: " . implode(', ', $availableFields)
                 ]);
             }
 
@@ -219,37 +220,36 @@ class ContentController extends Controller
             if (!($settings->fieldTypeSupport[$normalizedFieldClass] ?? false)) {
                 return $this->asJson([
                     'success' => false,
-                    'error' => 'Field type is not supported for content generation',
-                    'debug' => [
-                        'fieldClass' => $fieldClass,
-                        'normalizedFieldClass' => $normalizedFieldClass,
-                        'supportedTypes' => array_keys(array_filter($settings->fieldTypeSupport))
-                    ]
+                    'error' => 'Field type is not supported for content generation'
                 ]);
             }
 
-            // Log the generation attempt
-            if ($entry->id) {
-                Craft::info(
-                    "Content generation requested for entry '{$entry->title}' (ID: {$entry->id}), field '{$fieldHandle}'",
-                    'ai-content-writer'
-                );
-            } else {
-                Craft::info(
-                    "Content generation requested for new entry, type '{$entryType->handle}', field '{$fieldHandle}'",
-                    'ai-content-writer'
-                );
+            // Log the generation attempt (debug mode only)
+            if (Craft::$app->getConfig()->general->devMode) {
+                if ($entry->id) {
+                    Craft::info(
+                        "Content generation requested for entry '{$entry->title}' (ID: {$entry->id}), field '{$fieldHandle}'",
+                        'ai-content-writer'
+                    );
+                } else {
+                    Craft::info(
+                        "Content generation requested for new entry, type '{$entryType->handle}', field '{$fieldHandle}'",
+                        'ai-content-writer'
+                    );
+                }
             }
 
             // Generate content
             $content = $contentGenerationService->generateForEntry($entry, $fieldHandle, $prompt);
 
-            // Log successful generation  
-            $entryRef = $entry->id ? "entry {$entry->id}" : "new entry type '{$entryType->handle}'";
-            Craft::info(
-                "Content generated successfully for {$entryRef}, field '{$fieldHandle}', length: " . strlen($content),
-                'ai-content-writer'
-            );
+            // Log successful generation (debug mode only)
+            if (Craft::$app->getConfig()->general->devMode) {
+                $entryRef = $entry->id ? "entry {$entry->id}" : "new entry type '{$entryType->handle}'";
+                Craft::info(
+                    "Content generated successfully for {$entryRef}, field '{$fieldHandle}', length: " . strlen($content),
+                    'ai-content-writer'
+                );
+            }
 
             return $this->asJson([
                 'success' => true,
@@ -267,92 +267,11 @@ class ContentController extends Controller
 
             return $this->asJson([
                 'success' => false,
-                'error' => $e->getMessage(),
-                'debug' => [
-                    'entryId' => $entryId ?? null,
-                    'typeId' => $typeId ?? null,
-                    'sectionId' => $sectionId ?? null,
-                    'isNewEntry' => !$entry
-                ]
-            ]);
-        }
-    }
-
-    /**
-     * Generate content for multiple fields in batch
-     *
-     * @return Response JSON response with batch results
-     */
-    public function actionGenerateBatch(): Response
-    {
-        $this->requirePostRequest();
-        $this->requireAcceptsJson();
-
-        $request = Craft::$app->getRequest();
-
-        // Validate required parameters
-        $entryId = $request->getRequiredBodyParam('entryId');
-        $fieldPrompts = $request->getRequiredBodyParam('fieldPrompts'); // [fieldHandle => prompt]
-
-        if (!is_array($fieldPrompts) || empty($fieldPrompts)) {
-            return $this->asJson([
-                'success' => false,
-                'error' => 'Field prompts must be a non-empty array'
-            ]);
-        }
-
-        // Find the entry
-        $entry = Entry::find()->id($entryId)->one();
-
-        if (!$entry) {
-            throw new NotFoundHttpException('Entry not found');
-        }
-
-        // Check permissions
-        if (!Craft::$app->getUser()->checkPermission('editEntries:' . $entry->section->uid)) {
-            return $this->asJson([
-                'success' => false,
-                'error' => 'Insufficient permissions to edit this entry'
-            ]);
-        }
-
-        try {
-            $contentGenerationService = Plugin::getInstance()->contentGeneration;
-
-            // Generate content for all fields
-            $results = $contentGenerationService->generateBatch($entry, $fieldPrompts);
-
-            // Log batch generation
-            $successCount = count(array_filter($results, function ($result) {
-                return $result['success'];
-            }));
-
-            Craft::info(
-                "Batch content generation completed for entry {$entry->id}: {$successCount}/" . count($results) . " successful",
-                'ai-content-writer'
-            );
-
-            return $this->asJson([
-                'success' => true,
-                'results' => $results,
-                'summary' => [
-                    'total' => count($results),
-                    'successful' => $successCount,
-                    'failed' => count($results) - $successCount
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            Craft::error(
-                "Batch content generation failed for entry {$entry->id}: " . $e->getMessage(),
-                'ai-content-writer'
-            );
-
-            return $this->asJson([
-                'success' => false,
                 'error' => $e->getMessage()
             ]);
         }
     }
+
 
     /**
      * Get available fields for an entry
@@ -365,9 +284,10 @@ class ContentController extends Controller
         $this->requireAcceptsJson();
 
         // Enhanced parameter collection for new entry support
-        $entryId = $this->request->post("entryId");
-        $typeId = $this->request->post("typeId"); // New parameter
-        $sectionId = $this->request->post("sectionId"); // Fallback parameter
+        $request = Craft::$app->getRequest();
+        $entryId = $request->getBodyParam('entryId');
+        $typeId = $request->getBodyParam('typeId'); // New parameter
+        $sectionId = $request->getBodyParam('sectionId'); // Fallback parameter
 
         $entry = null;
         $entryType = null;
@@ -381,18 +301,24 @@ class ContentController extends Controller
         if ($entry) {
             // Existing entry - get type from entry
             $entryType = $entry->getType();
-            Craft::info("Found existing entry {$entryId}, type: {$entryType->handle}", 'ai-content-writer');
+            if (Craft::$app->getConfig()->general->devMode) {
+                Craft::info("Found existing entry {$entryId}, type: {$entryType->handle}", 'ai-content-writer');
+            }
         } elseif ($typeId && is_numeric($typeId)) {
             // New entry - get type by ID
             $entryType = Craft::$app->getEntries()->getEntryTypeById($typeId);
-            Craft::info("New entry detected, using typeId {$typeId}, type: " . ($entryType ? $entryType->handle : 'not found'), 'ai-content-writer');
+            if (Craft::$app->getConfig()->general->devMode) {
+                Craft::info("New entry detected, using typeId {$typeId}, type: " . ($entryType ? $entryType->handle : 'not found'), 'ai-content-writer');
+            }
         } elseif ($sectionId && is_numeric($sectionId)) {
             // Fallback - get first entry type from section
             $section = Craft::$app->getEntries()->getSectionById($sectionId);
             if ($section) {
                 $entryTypes = $section->getEntryTypes();
                 $entryType = !empty($entryTypes) ? $entryTypes[0] : null;
-                Craft::info("Using first entry type from section {$sectionId}: " . ($entryType ? $entryType->handle : 'none found'), 'ai-content-writer');
+                if (Craft::$app->getConfig()->general->devMode) {
+                    Craft::info("Using first entry type from section {$sectionId}: " . ($entryType ? $entryType->handle : 'none found'), 'ai-content-writer');
+                }
             }
         }
 
@@ -401,6 +327,29 @@ class ContentController extends Controller
                 'success' => false,
                 'error' => 'Could not determine entry type. Please ensure entry type information is available.'
             ]);
+        }
+
+        // For new entries, create a temporary entry with the correct type for consistency
+        if (!$entry) {
+            // Find a section that uses this entry type
+            $sectionId = null;
+            foreach (Craft::$app->getEntries()->getAllSections() as $section) {
+                foreach ($section->getEntryTypes() as $sectionEntryType) {
+                    if ($sectionEntryType->id === $entryType->id) {
+                        $sectionId = $section->id;
+                        break 2; // Break out of both loops
+                    }
+                }
+            }
+            
+            if ($sectionId) {
+                // Create temporary entry for consistent response data
+                $entry = new Entry([
+                    'typeId' => $entryType->id,
+                    'sectionId' => $sectionId,
+                    'title' => 'Temporary Entry for Field Discovery'
+                ]);
+            }
         }
 
         try {
@@ -416,10 +365,10 @@ class ContentController extends Controller
                     'handle' => $entryType->handle
                 ],
                 'entryInfo' => [
-                    'isNewEntry' => !$entry->id,
-                    'entryId' => $entry->id ?? null,
-                    'sectionId' => $entry->sectionId ?? null,
-                    'sectionName' => $entry->section->name ?? null
+                    'isNewEntry' => !$entry || !$entry->id,
+                    'entryId' => $entry ? $entry->id : null,
+                    'sectionId' => $entry ? $entry->sectionId : null,
+                    'sectionName' => $entry && $entry->section ? $entry->section->name : null
                 ]
             ]);
 
@@ -431,12 +380,7 @@ class ContentController extends Controller
 
             return $this->asJson([
                 'success' => false,
-                'error' => $e->getMessage(),
-                'debug' => [
-                    'entryId' => $entryId ?? null,
-                    'typeId' => $typeId ?? null,
-                    'sectionId' => $sectionId ?? null
-                ]
+                'error' => $e->getMessage()
             ]);
         }
     }

@@ -144,10 +144,13 @@ class EntryTypeService extends Component
             // Save the updated settings
             Craft::$app->getPlugins()->savePluginSettings(Plugin::getInstance(), $settings->getAttributes());
             
-            Craft::info(
-                "Updated generation settings for entry type {$entryTypeId}: enabled={$enabled}, defaultFields=" . implode(',', $defaultFields),
-                'ai-content-writer'
-            );
+            // Log settings changes only in debug mode
+            if (Craft::$app->getConfig()->general->devMode) {
+                Craft::info(
+                    "Updated generation settings for entry type {$entryTypeId}: enabled={$enabled}, defaultFields=" . implode(',', $defaultFields),
+                    'ai-content-writer'
+                );
+            }
 
             return true;
         } catch (\Exception $e) {

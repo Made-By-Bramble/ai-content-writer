@@ -144,11 +144,13 @@ class ModelConfigService extends Component
             $originalValue = $params['token_value'];
             $params['token_value'] = $maxTokens;
             
-            // Log the override for debugging
-            Craft::info(
-                "Token limit overridden by settings for model '{$modelId}': {$maxTokens} (YAML default was {$originalValue})",
-                'ai-content-writer'
-            );
+            // Log the override for debugging (debug mode only)
+            if (Craft::$app->getConfig()->general->devMode) {
+                Craft::info(
+                    "Token limit overridden by settings for model '{$modelId}': {$maxTokens} (YAML default was {$originalValue})",
+                    'ai-content-writer'
+                );
+            }
         }
         
         // Ensure token limit doesn't exceed model's maximum context
@@ -158,6 +160,7 @@ class ModelConfigService extends Component
                 $originalValue = $params['token_value'];
                 $params['token_value'] = $maxContext;
                 
+                // Keep warning level logging as it indicates a configuration issue
                 Craft::warning(
                     "Token limit {$originalValue} exceeds model {$modelId} max context {$maxContext}, using model maximum",
                     'ai-content-writer'
@@ -326,20 +329,26 @@ class ModelConfigService extends Component
             $storedHash = $this->configFileHashes[$file] ?? null;
             
             if ($storedHash !== $currentHash) {
-                Craft::info(
-                    "Configuration change detected in file: {$file}",
-                    'ai-content-writer'
-                );
+                // Log configuration changes only in debug mode
+                if (Craft::$app->getConfig()->general->devMode) {
+                    Craft::info(
+                        "Configuration change detected in file: {$file}",
+                        'ai-content-writer'
+                    );
+                }
                 return true;
             }
         }
         
         // Check if files were added or removed
         if (count($files) !== count($this->configFileHashes)) {
-            Craft::info(
-                "Configuration file count changed: " . count($files) . " files found, " . count($this->configFileHashes) . " previously loaded",
-                'ai-content-writer'
-            );
+            // Log configuration file changes only in debug mode
+            if (Craft::$app->getConfig()->general->devMode) {
+                Craft::info(
+                    "Configuration file count changed: " . count($files) . " files found, " . count($this->configFileHashes) . " previously loaded",
+                    'ai-content-writer'
+                );
+            }
             return true;
         }
         

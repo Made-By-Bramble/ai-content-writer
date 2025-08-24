@@ -83,7 +83,9 @@
     
     // Validate we have necessary information
     if (!entryTypeId && !entryId) {
-        console.error('AI Content Writer: No entry type or entry ID available');
+        if (window.Craft && Craft.devMode) {
+            console.error('AI Content Writer: No entry type or entry ID available');
+        }
         return;
     }
     const fieldSelect = document.getElementById('ai-target-field');
@@ -127,19 +129,18 @@
             if (data.success) {
                 populateFieldSelector(data.fields);
                 
-                // Log entry type information for debugging
-                if (data.entryType) {
+                // Log entry type information for debugging (debug mode only)
+                if (data.entryType && window.Craft && Craft.devMode) {
                     console.log('AI Content Writer: Loaded fields for', data.entryType.name, 
                                data.entryInfo.isNewEntry ? '(new entry)' : '(existing entry)');
                 }
             } else {
+                // Keep error logging for important failures
                 console.error('Failed to load available fields:', data.error);
-                if (data.debug) {
-                    console.log('Debug info:', data.debug);
-                }
             }
         })
         .catch(error => {
+            // Keep error logging for important failures
             console.error('Error loading available fields:', error);
         });
     }
@@ -221,6 +222,7 @@
                 Craft.cp.displayError('{{ "Generation failed"|t("ai-content-writer") }}: ' + data.error);
             }
         } catch (error) {
+            // Keep error logging for important failures
             console.error('Generation error:', error);
             Craft.cp.displayError('{{ "Generation failed"|t("ai-content-writer") }}: ' + error.message);
         } finally {
@@ -278,7 +280,9 @@
         // Find the target field in the entry form
         const fieldContainer = document.querySelector(`[data-attribute="${fieldHandle}"]`);
         if (!fieldContainer) {
-            console.error('Could not find field container for:', fieldHandle);
+            if (window.Craft && Craft.devMode) {
+                console.error('Could not find field container for:', fieldHandle);
+            }
             return false;
         }
         
@@ -366,14 +370,12 @@
     function insertIntoTableField(fieldContainer, content) {
         // For table fields, show a message about manual insertion
         Craft.cp.displayNotice('{{ "Table content generated. Please manually structure the content into table rows and columns."|t("ai-content-writer") }}');
-        console.log('Table content for manual insertion:', content);
         return true;
     }
     
     function insertIntoMatrixField(fieldContainer, content) {
         // For Matrix fields, show a message about manual insertion
         Craft.cp.displayNotice('{{ "Matrix content generated. Please manually add the content to your Matrix blocks."|t("ai-content-writer") }}');
-        console.log('Matrix content for manual insertion:', content);
         return true;
     }
     
