@@ -12,7 +12,10 @@
     }
   ],
   "support": {
-    "email": "support@madebybramble.co.uk"
+    "email": "support@madebybramble.co.uk",
+    "issues": "https://github.com/Made-By-Bramble/ai-content-writer/issues",
+    "source": "https://github.com/Made-By-Bramble/ai-content-writer",
+    "docs": "https://github.com/Made-By-Bramble/ai-content-writer/blob/master/README.md"
   },
   "require": {
     "craftcms/cms": "^5.3.0",
@@ -26,9 +29,11 @@
     }
   },
   "extra": {
-    "name": "AI Content Writer",
+    "name": "OpenAI Content Writer",
     "handle": "ai-content-writer",
     "developer": "Made By Bramble",
-    "developerUrl": "https://www.madebybramble.co.uk"
+    "developerUrl": "https://www.madebybramble.co.uk",
+    "documentationUrl": "https://github.com/Made-By-Bramble/ai-content-writer/blob/master/README.md",
+    "changelogUrl": "https://github.com/Made-By-Bramble/ai-content-writer/blob/mmasterain/CHANGELOG.md"
   }
 }
