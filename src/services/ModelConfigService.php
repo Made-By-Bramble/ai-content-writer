@@ -137,14 +137,14 @@ class ModelConfigService extends Component
             'token_value' => $config['api_parameters']['default_token_limit'], // Default from YAML
         ];
         
-        // OVERRIDE: Use settings maxTokens if provided and valid
+        // Apply settings maxTokens if provided and valid
         if ($settings && $settings->maxTokens) {
             // Validate settings value is within acceptable range
             $maxTokens = max(100, min(4000, $settings->maxTokens));
             $originalValue = $params['token_value'];
             $params['token_value'] = $maxTokens;
             
-            // Log the override for debugging (debug mode only)
+            // Log token limit adjustments for configuration tracking
             if (Craft::$app->getConfig()->general->devMode) {
                 Craft::info(
                     "Token limit overridden by settings for model '{$modelId}': {$maxTokens} (YAML default was {$originalValue})",
@@ -160,7 +160,7 @@ class ModelConfigService extends Component
                 $originalValue = $params['token_value'];
                 $params['token_value'] = $maxContext;
                 
-                // Keep warning level logging as it indicates a configuration issue
+                // Log when token limits exceed model capabilities
                 Craft::warning(
                     "Token limit {$originalValue} exceeds model {$modelId} max context {$maxContext}, using model maximum",
                     'ai-content-writer'
@@ -329,7 +329,7 @@ class ModelConfigService extends Component
             $storedHash = $this->configFileHashes[$file] ?? null;
             
             if ($storedHash !== $currentHash) {
-                // Log configuration changes only in debug mode
+                // Track configuration file changes for development
                 if (Craft::$app->getConfig()->general->devMode) {
                     Craft::info(
                         "Configuration change detected in file: {$file}",
@@ -342,7 +342,7 @@ class ModelConfigService extends Component
         
         // Check if files were added or removed
         if (count($files) !== count($this->configFileHashes)) {
-            // Log configuration file changes only in debug mode
+            // Track configuration file count changes for development
             if (Craft::$app->getConfig()->general->devMode) {
                 Craft::info(
                     "Configuration file count changed: " . count($files) . " files found, " . count($this->configFileHashes) . " previously loaded",

@@ -49,7 +49,7 @@ class EntryTypeService extends Component
             }
         }
         
-        // Process custom fields with fixed detection logic
+        // Process custom fields for content generation support
         foreach ($layout->getCustomFields() as $field) {
             $fieldClass = get_class($field);
             
@@ -180,8 +180,8 @@ class EntryTypeService extends Component
     /**
      * Check if a field type is supported for content generation
      *
-     * Handles the backslash normalization issue between settings storage
-     * and field class detection, plus type coercion from string to boolean.
+     * Normalizes field class names for consistent settings lookup and
+     * ensures boolean return values for field type support status.
      *
      * @param string $fieldClass Field class name
      * @return bool Whether the field type is supported

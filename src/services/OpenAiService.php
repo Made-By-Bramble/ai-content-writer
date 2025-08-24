@@ -328,7 +328,7 @@ class OpenAiService extends Component
             } catch (Throwable $e) {
                 $lastException = $e;
                 
-                // Check for parameter errors and try alternative parameters
+                // Attempt parameter adjustment for compatibility
                 $shouldRetry = false;
                 $retryParameters = $parameters;
                 
@@ -408,7 +408,7 @@ class OpenAiService extends Component
                         return $content;
                         
                     } catch (Throwable $retryException) {
-                        // If retry also fails, continue with original error handling (keep error logging)
+                        // Continue with standard error handling after retry failure
                         Craft::error(
                             "Retry with alternative parameters also failed: " . $retryException->getMessage(),
                             'ai-content-writer'
@@ -453,8 +453,8 @@ class OpenAiService extends Component
     /**
      * Get model-specific parameters for OpenAI API
      *
-     * Parameters are now loaded from YAML configuration files instead of hardcoded arrays.
-     * This allows for easy model configuration management without code changes.
+     * Loads model-specific parameters from YAML configuration files.
+     * Enables flexible model configuration management.
      *
      * @param string $model Model name to get parameters for
      * @return array Array containing:

@@ -86,7 +86,7 @@ class Plugin extends BasePlugin
 
         $this->name = Craft::t('ai-content-writer', 'AI Content Writer');
 
-        // Defer initialization until Craft is ready to avoid timing issues
+        // Initialize plugin components after Craft is fully loaded
         Craft::$app->onInit(function () {
             $this->registerTemplateHooks();
             $this->registerCpUrlRules();
@@ -122,12 +122,11 @@ class Plugin extends BasePlugin
      * This method registers the EVENT_DEFINE_SIDEBAR_HTML event to add
      * the AI content generation panel to the entry editor sidebar.
      * 
-     * Replaces the obsolete cp.entries.edit.details template hook that was
-     * removed in Craft CMS 4+.
+     * Modern event-based integration with entry editor sidebar
      */
     private function registerTemplateHooks(): void
     {
-        // Register modern event-based entry sidebar integration
+        // Register event-based entry sidebar integration
         Event::on(
             Entry::class,
             Entry::EVENT_DEFINE_SIDEBAR_HTML,
@@ -170,7 +169,7 @@ class Plugin extends BasePlugin
                 'ai-content-writer'
             );
         } catch (\Throwable $e) {
-            // Log template rendering errors
+            // Handle template rendering failures gracefully
             Craft::error(
                 "Failed to render AI Content Writer panel for entry {$entry->id}: " . $e->getMessage(),
                 'ai-content-writer'
