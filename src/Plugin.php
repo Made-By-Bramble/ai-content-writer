@@ -5,6 +5,7 @@ namespace MadeByBramble\AiContentWriter;
 use Craft;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
+use craft\console\Application as ConsoleApplication;
 use craft\elements\Entry;
 use craft\events\DefineHtmlEvent;
 use craft\events\RegisterUrlRulesEvent;
@@ -77,7 +78,7 @@ class Plugin extends BasePlugin
 
     /**
      * Initialize the plugin and register event handlers
-     * 
+     *
      * @throws \Exception When initialization fails
      */
     public function init(): void
@@ -85,6 +86,11 @@ class Plugin extends BasePlugin
         parent::init();
 
         $this->name = Craft::t('ai-content-writer', 'AI Content Writer');
+
+        // Register console controller namespace for CLI commands
+        if (Craft::$app instanceof ConsoleApplication) {
+            $this->controllerNamespace = 'MadeByBramble\\AiContentWriter\\console\\controllers';
+        }
 
         // Initialize plugin components after Craft is fully loaded
         Craft::$app->onInit(function () {
