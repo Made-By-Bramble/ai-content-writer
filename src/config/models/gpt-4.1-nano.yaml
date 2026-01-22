@@ -1,11 +1,11 @@
-# Model Configuration for GPT-4.1 Mini
-# Source: https://platform.openai.com/docs/models/gpt-4.1-mini
+# Model Configuration for GPT-4.1 nano
+# Source: https://platform.openai.com/docs/models/gpt-4.1-nano
 # Source: https://openai.com/index/gpt-4-1/
 model:
-  id: "gpt-4.1-mini"
-  name: "GPT-4.1 Mini"
-  friendly_name: "GPT-4.1 Mini (Speed Optimized)"
-  description: "Speed-optimized with 1M context, excellent instruction following and tool calling, 50% faster than GPT-4o"
+  id: "gpt-4.1-nano"
+  name: "GPT-4.1 nano"
+  friendly_name: "GPT-4.1 nano (Fastest)"
+  description: "Fastest and cheapest model with 1M token context, ideal for classification, autocompletion, and low-latency tasks"
 
 capabilities:
   vision: true
@@ -26,21 +26,21 @@ metadata:
   release_date: "2025-04-14"
   deprecation_date: null
   knowledge_cutoff: "2024-06-01"
-  priority: 680
-  cost_tier: "low"
-  speed_tier: "ultra"
-  input_price_per_million: 0.40
-  output_price_per_million: 1.60
+  priority: 400
+  cost_tier: "budget"
+  speed_tier: "fastest"
+  input_price_per_million: 0.10
+  output_price_per_million: 0.40
 
 ui_display:
   show_in_dropdown: true
   category: "GPT-4.1 Series"
-  recommended: true
-  badge: "Fast"
+  recommended: false
+  badge: "Fastest"
 
 version_info:
   api_version: "2024-02-01"
   supports_structured_output: true
   supports_fine_tuning: true
-  max_context_tokens: 1047576
+  max_context_tokens: 1000000
   max_output_tokens: 32768

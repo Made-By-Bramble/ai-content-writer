@@ -1,0 +1,45 @@
+# Model Configuration for o3-mini
+# Source: https://platform.openai.com/docs/models/o3-mini
+# Source: https://openai.com/index/openai-o3-mini/
+model:
+  id: "o3-mini"
+  name: "o3-mini"
+  friendly_name: "o3-mini (Budget Reasoning)"
+  description: "First small reasoning model with function calling and structured outputs, production-ready for technical domains"
+
+capabilities:
+  vision: false
+  reasoning: true
+  multimodal: false
+
+api_parameters:
+  token_parameter: "max_completion_tokens"
+  default_token_limit: 2000
+  max_token_limit: 100000
+  supports_temperature: false
+  temperature_locked: true
+  locked_temperature_value: 1.0
+  supports_reasoning_effort: true
+  default_reasoning_effort: "medium"
+
+metadata:
+  owner: "openai"
+  release_date: "2025-01-31"
+  deprecation_date: null
+  priority: 750
+  cost_tier: "budget"
+  speed_tier: "fast"
+
+ui_display:
+  show_in_dropdown: true
+  category: "O Series (Reasoning)"
+  recommended: false
+  badge: "Budget"
+
+version_info:
+  api_version: "2024-09-01"
+  supports_structured_output: true
+  supports_function_calling: true
+  supports_developer_messages: true
+  max_context_tokens: 200000
+  max_output_tokens: 100000

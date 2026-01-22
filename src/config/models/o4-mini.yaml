@@ -1,0 +1,45 @@
+# Model Configuration for o4-mini
+# Source: https://platform.openai.com/docs/models/o4-mini
+# Source: https://openai.com/index/introducing-o3-and-o4-mini/
+model:
+  id: "o4-mini"
+  name: "o4-mini"
+  friendly_name: "o4-mini (Fast Reasoning)"
+  description: "Small reasoning model optimized for fast, cost-efficient reasoning with exceptional performance in coding and visual tasks"
+
+capabilities:
+  vision: true
+  reasoning: true
+  multimodal: true
+
+api_parameters:
+  token_parameter: "max_completion_tokens"
+  default_token_limit: 2000
+  max_token_limit: 100000
+  supports_temperature: false
+  temperature_locked: true
+  locked_temperature_value: 1.0
+  supports_reasoning_effort: true
+  default_reasoning_effort: "medium"
+
+metadata:
+  owner: "openai"
+  release_date: "2025-04-16"
+  deprecation_date: null
+  priority: 850
+  cost_tier: "standard"
+  speed_tier: "fast"
+
+ui_display:
+  show_in_dropdown: true
+  category: "O Series (Reasoning)"
+  recommended: true
+  badge: "Efficient"
+
+version_info:
+  api_version: "2024-09-01"
+  supports_structured_output: true
+  supports_function_calling: true
+  supports_streaming: true
+  max_context_tokens: 200000
+  max_output_tokens: 100000

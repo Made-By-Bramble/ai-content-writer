@@ -1,10 +1,11 @@
-# Model Configuration for GPT-5
-# Source: https://platform.openai.com/docs/models/gpt-5
+# Model Configuration for GPT-5.1
+# Source: https://platform.openai.com/docs/models/gpt-5.1
+# Source: https://openai.com/index/gpt-5-1-for-developers/
 model:
-  id: "gpt-5"
-  name: "GPT-5"
-  friendly_name: "GPT-5 (Previous Generation)"
-  description: "Previous flagship model for coding, reasoning, and agentic tasks across domains"
+  id: "gpt-5.1"
+  name: "GPT-5.1"
+  friendly_name: "GPT-5.1 (Previous Flagship)"
+  description: "Flagship model with configurable reasoning and non-reasoning effort, strong general-purpose capabilities"
 
 capabilities:
   vision: true
@@ -19,18 +20,16 @@ api_parameters:
   temperature_locked: true
   locked_temperature_value: 1.0
   supports_reasoning_effort: true
-  default_reasoning_effort: "medium"
+  default_reasoning_effort: "none"
 
 metadata:
   owner: "openai"
-  release_date: "2025-08-07"
+  release_date: "2025-11-13"
   deprecation_date: null
-  priority: 950
+  knowledge_cutoff: "2025-06-01"
+  priority: 1000
   cost_tier: "premium"
   speed_tier: "fast"
-  input_price_per_million: 1.25
-  output_price_per_million: 10.00
-  cached_input_discount: 0.90
 
 ui_display:
   show_in_dropdown: true

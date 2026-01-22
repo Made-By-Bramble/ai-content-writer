@@ -1,23 +1,26 @@
 # Model Configuration for GPT-5 Mini
+# Source: https://platform.openai.com/docs/models/gpt-5-mini
 model:
   id: "gpt-5-mini"
   name: "GPT-5 Mini"
   friendly_name: "GPT-5 Mini (Fast & Efficient)"
-  description: "Fast and cost-effective content generation with solid writing quality and quick response times"
-  
+  description: "Faster, more cost-efficient version of GPT-5, great for well-defined tasks and precise prompts"
+
 capabilities:
   vision: true
-  reasoning: false
+  reasoning: true
   multimodal: true
-  
+
 api_parameters:
   token_parameter: "max_completion_tokens"
   default_token_limit: 2000
-  supports_temperature: true
-  default_temperature: 0.1
-  max_temperature: 2.0
-  min_temperature: 0.0
-  
+  max_token_limit: 128000
+  supports_temperature: false
+  temperature_locked: true
+  locked_temperature_value: 1.0
+  supports_reasoning_effort: true
+  default_reasoning_effort: "medium"
+
 metadata:
   owner: "openai"
   release_date: "2025-08-07"
@@ -25,14 +28,15 @@ metadata:
   priority: 900
   cost_tier: "standard"
   speed_tier: "ultra"
-  
+
 ui_display:
   show_in_dropdown: true
   category: "GPT-5 Series"
   recommended: true
   badge: "Fast"
-  
+
 version_info:
   api_version: "2024-02-01"
   supports_structured_output: true
-  max_context_tokens: 128000
+  max_context_tokens: 400000
+  max_output_tokens: 128000
