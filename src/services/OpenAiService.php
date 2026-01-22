@@ -470,8 +470,90 @@ class OpenAiService extends Component
     }
 
     /**
+     * Generate content using a specific model (for testing purposes)
+     *
+     * @param string $model The model ID to use
+     * @param string $prompt The user prompt
+     * @param array $context Optional context
+     * @return array [success => bool, content => string, error => string|null, duration => float]
+     */
+    public function generateWithModel(string $model, string $prompt, array $context = []): array
+    {
+        $startTime = microtime(true);
+
+        try {
+            $settings = Plugin::getInstance()->getSettings();
+            $modelConfigService = Plugin::getInstance()->modelConfig;
+
+            // Get model-specific parameters
+            $modelParams = $modelConfigService->getModelParameters($model, $settings);
+
+            // Build system prompt
+            $systemPrompt = $settings->getSystemPrompt();
+            if (!empty($context)) {
+                $contextInstructions = [];
+                if (isset($context['format'])) {
+                    $contextInstructions[] = "Format the content as {$context['format']}.";
+                }
+                if (!empty($contextInstructions)) {
+                    $systemPrompt .= "\n\nAdditional context:\n" . implode("\n", $contextInstructions);
+                }
+            }
+
+            $messages = [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $prompt]
+            ];
+
+            $parameters = [
+                'model' => $model,
+                'messages' => $messages,
+            ];
+
+            // Add token limit
+            $parameters[$modelParams['token_param']] = $modelParams['token_value'];
+
+            // Add temperature if supported
+            if (isset($modelParams['temperature'])) {
+                $parameters['temperature'] = $modelParams['temperature'];
+            }
+
+            // Add reasoning_effort if supported
+            if (isset($modelParams['reasoning_effort'])) {
+                $parameters['reasoning_effort'] = $modelParams['reasoning_effort'];
+            }
+
+            $response = $this->getClient()->chat()->create($parameters);
+            $content = $response->choices[0]->message->content ?? '';
+            $duration = microtime(true) - $startTime;
+
+            return [
+                'success' => !empty($content),
+                'content' => trim($content),
+                'error' => empty($content) ? 'Empty response' : null,
+                'duration' => round($duration, 2),
+                'usage' => [
+                    'prompt_tokens' => $response->usage->promptTokens ?? 0,
+                    'completion_tokens' => $response->usage->completionTokens ?? 0,
+                    'total_tokens' => $response->usage->totalTokens ?? 0,
+                ],
+            ];
+
+        } catch (\Throwable $e) {
+            $duration = microtime(true) - $startTime;
+            return [
+                'success' => false,
+                'content' => '',
+                'error' => $e->getMessage(),
+                'duration' => round($duration, 2),
+                'usage' => null,
+            ];
+        }
+    }
+
+    /**
      * Test the OpenAI connection and API key validity
-     * 
+     *
      * This method provides a way to validate the API configuration
      * without processing actual content, useful for settings validation.
      *

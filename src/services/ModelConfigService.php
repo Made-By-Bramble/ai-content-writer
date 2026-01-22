@@ -259,7 +259,12 @@ class ModelConfigService extends Component
                 
                 if ($config['api_parameters']['supports_reasoning_effort'] === true) {
                     $reasoningEffort = $config['api_parameters']['default_reasoning_effort'] ?? null;
-                    $validEfforts = ['minimal', 'low', 'medium', 'high'];
+                    // Updated to support OpenAI's full reasoning_effort range:
+                    // - 'none': GPT-5.1+ default, no reasoning for faster responses
+                    // - 'minimal': Light reasoning
+                    // - 'low'/'medium'/'high': Standard reasoning levels
+                    // - 'xhigh': GPT-5.2+ deepest reasoning
+                    $validEfforts = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh'];
                     if ($reasoningEffort && !in_array($reasoningEffort, $validEfforts)) {
                         $issues[] = "Model {$modelId}: 'default_reasoning_effort' must be one of: " . implode(', ', $validEfforts);
                     }
